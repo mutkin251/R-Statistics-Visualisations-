@@ -1,0 +1,503 @@
+.libPaths(c(file.path("D:", "R-4.5.1", "library"), .libPaths()))
+library(duckdb)
+library(DBI)
+library(jsonlite)
+library(tidyverse)
+library(ggplot2)
+con <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+
+# PART 1: DATA PREPARATION AND PARSING 
+cat("Loading JSON file")
+steam_data <- fromJSON("games.json", simplifyVector = FALSE)
+games_list <- steam_data$games
+cat("Loaded", length(games_list),"games from JSON")
+cat("Extracting main game data")
+
+# for shitty nested values
+safe_extract <- function(obj, ...) {
+  path <- list(...)
+  result <- obj
+  for (key in path) {
+    if (is.null(result) || !is.list(result)) return(NA)
+    result <- result[[key]]
+  }
+  if (is.null(result)) return(NA)
+  return(result)
+} #this function was mostly made by chatGPT
+
+games_df <- do.call(rbind, lapply(games_list, function(g) {
+  data.frame(
+    app_id = as.character(safe_extract(g, "appid")),
+    name = as.character(safe_extract(g, "app_details", "data", "name")),
+    type = as.character(safe_extract(g, "app_details", "data", "type")),
+    required_age = as.integer(safe_extract(g, "app_details", "data", "required_age")),
+    is_free = as.logical(safe_extract(g, "app_details", "data", "is_free")),
+    short_description = as.character(safe_extract(g, "app_details", "data", "short_description")),
+    supported_languages = as.character(safe_extract(g, "app_details", "data", "supported_languages")),
+    website = as.character(safe_extract(g, "app_details", "data", "website")),
+    windows = as.logical(safe_extract(g, "app_details", "data", "platforms", "windows")),
+    mac = as.logical(safe_extract(g, "app_details", "data", "platforms", "mac")),
+    linux = as.logical(safe_extract(g, "app_details", "data", "platforms", "linux")),
+    release_date = as.character(safe_extract(g, "app_details", "data", "release_date", "date")),
+    coming_soon = as.logical(safe_extract(g, "app_details", "data", "release_date", "coming_soon")),
+    controller_support = as.character(safe_extract(g, "app_details", "data", "controller_support")),
+    
+    # Store JSON arrays as JSON strings
+    
+    developers_json = ifelse(
+      is.null(safe_extract(g, "app_details", "data", "developers")),
+      NA,
+      toJSON(safe_extract(g, "app_details", "data", "developers"))
+    ),
+    publishers_json = ifelse(
+      is.null(safe_extract(g, "app_details", "data", "publishers")),
+      NA,
+      toJSON(safe_extract(g, "app_details", "data", "publishers"))
+    ),
+    categories_json = ifelse(
+      is.null(safe_extract(g, "app_details", "data", "categories")),
+      NA,
+      toJSON(safe_extract(g, "app_details", "data", "categories"))
+    ),
+    genres_json = ifelse(
+      is.null(safe_extract(g, "app_details", "data", "genres")),
+      NA,
+      toJSON(safe_extract(g, "app_details", "data", "genres"))
+    ),
+    screenshots_json = ifelse(
+      is.null(safe_extract(g, "app_details", "data", "screenshots")),
+      NA,
+      toJSON(safe_extract(g, "app_details", "data", "screenshots"))
+    ),
+    movies_json = ifelse(
+      is.null(safe_extract(g, "app_details", "data", "movies")),
+      NA,
+      toJSON(safe_extract(g, "app_details", "data", "movies"))
+    ),
+    stringsAsFactors = FALSE
+  )
+}))
+
+cat("Extracted data for", nrow(games_df)," games")
+dbWriteTable(con, "games_raw", games_df, overwrite = TRUE)
+
+
+cat("Parsing developers")
+
+result <- tryCatch({
+  dbExecute(con, "
+    CREATE TABLE developers AS
+    SELECT 
+      app_id,
+      UNNEST(json_extract_string(developers_json, '$[*]')) AS developer
+    FROM games_raw
+    WHERE developers_json IS NOT NULL 
+      AND developers_json != 'null'
+      AND developers_json != 'NA'
+  ")
+  cat("Developers parsed successfully")
+}, error = function(e) {
+  cat("Error parsing developers:", e$message)
+})
+
+
+cat("Parsing publishers")
+result <- tryCatch({
+  dbExecute(con, "
+    CREATE TABLE publishers AS
+    SELECT 
+      app_id,
+      UNNEST(json_extract_string(publishers_json, '$[*]')) AS publisher
+    FROM games_raw
+    WHERE publishers_json IS NOT NULL 
+      AND publishers_json != 'null'
+      AND publishers_json != 'NA'
+  ")
+  cat("Publishers parsed successfully")
+}, error = function(e) {
+  cat("Error parsing publishers:", e$message)
+})
+ # arrays of objects with DISTINGUISH id and description
+cat("Parsing categories")
+result <- tryCatch({
+  dbExecute(con, "
+    CREATE TABLE categories AS
+      SELECT 
+        app_id,
+        CASE
+          WHEN json_type(json_extract(cat_obj, '$.id')) = 'ARRAY'
+            THEN (json_extract(cat_obj, '$.id')->0)::INTEGER
+          ELSE json_extract(cat_obj, '$.id')::INTEGER
+        END AS category_id,
+        json_extract(cat_obj, '$.description')::VARCHAR AS category_name
+      FROM (
+        SELECT 
+          app_id,
+          UNNEST(json_extract(categories_json, '$[*]')) AS cat_obj
+        FROM games_raw
+        WHERE categories_json IS NOT NULL
+          AND categories_json != 'null'
+          AND categories_json != 'NA'
+      );
+  ")
+  cat("Categories parsed successfully")
+}, error = function(e) {
+  cat("Error parsing categories:", e$message)
+})
+
+# same here
+cat("Parsing genres")
+result <- tryCatch({
+  dbExecute(con, "
+    CREATE TABLE genres AS
+    SELECT 
+      app_id,
+      json_extract_string(CAST(genre_obj AS JSON), '$.id') AS genre_id,
+      json_extract_string(CAST(genre_obj AS JSON), '$.description') AS genre_name
+    FROM (
+      SELECT 
+        app_id,
+        UNNEST(json_extract_string(genres_json, '$[*]')) AS genre_obj
+      FROM games_raw
+      WHERE genres_json IS NOT NULL 
+        AND genres_json != 'null'
+        AND genres_json != 'NA'
+    )
+  ")
+  cat("Genres parsed successfully")
+}, error = function(e) {
+  cat("Error parsing genres:", e$message)
+})
+
+# again array of objects with URLs
+cat("Parsing screenshots")
+result <- tryCatch({
+  dbExecute(con, "
+    CREATE TABLE screenshots AS
+      SELECT 
+        app_id,
+        CASE
+          WHEN json_type(json_extract(ss_obj, '$.id')) = 'ARRAY'
+            THEN (json_extract(ss_obj, '$.id')->0)::INTEGER
+          ELSE json_extract(ss_obj, '$.id')::INTEGER
+        END AS screenshot_id,
+        json_extract(ss_obj, '$.path_thumbnail')::VARCHAR AS thumbnail_url,
+        json_extract(ss_obj, '$.path_full')::VARCHAR AS full_url
+      FROM (
+        SELECT 
+          app_id,
+          UNNEST(json_extract(screenshots_json, '$[*]')) AS ss_obj
+        FROM games_raw
+        WHERE screenshots_json IS NOT NULL 
+          AND screenshots_json != 'null'
+          AND screenshots_json != 'NA'
+      );
+  ")
+  cat("Screenshots parsed successfully")
+}, error = function(e) {
+  cat("Error parsing screenshots:", e$message)
+})
+
+# array of objects with video data
+cat("Parsing movies")
+result <- tryCatch({
+  dbExecute(con, "
+    CREATE TABLE movies AS
+      SELECT 
+        app_id,
+      
+        -- movie id
+        CASE
+          WHEN json_type(json_extract(movie_obj, '$.id')) = 'ARRAY'
+            THEN (json_extract(movie_obj, '$.id')->0)::INTEGER
+          ELSE json_extract(movie_obj, '$.id')::INTEGER
+        END AS movie_id,
+      
+        -- name
+        json_extract(movie_obj, '$.name')::VARCHAR AS movie_name,
+      
+        -- thumbnail
+        json_extract(movie_obj, '$.thumbnail')::VARCHAR AS thumbnail_url,
+      
+        -- highlight (boolean)
+        CASE
+          WHEN json_type(json_extract(movie_obj, '$.highlight')) = 'ARRAY'
+            THEN (json_extract(movie_obj, '$.highlight')->0)::BOOLEAN
+          ELSE json_extract(movie_obj, '$.highlight')::BOOLEAN
+        END AS is_highlight
+      
+      FROM (
+        SELECT 
+          app_id,
+          UNNEST(json_extract(movies_json, '$[*]')) AS movie_obj
+        FROM games_raw
+        WHERE movies_json IS NOT NULL
+          AND movies_json != 'null'
+          AND movies_json != 'NA'
+      );
+  ")
+  cat("Movies parsed successfully")
+}, error = function(e) {
+  cat("Error parsing movies:", e$message)
+})
+
+
+cat("Creating cleaned games table")
+dbExecute(con, "
+  CREATE TABLE games_clean AS
+  SELECT 
+    app_id,
+    name,
+    type,
+    required_age,
+    is_free,
+    short_description,
+    supported_languages,
+    website,
+    windows,
+    mac,
+    linux,
+    coming_soon,
+    controller_support,
+    CASE 
+      WHEN release_date = 'To be announced' THEN NULL
+      WHEN release_date = 'NA' THEN NULL
+      WHEN release_date LIKE '%,%' THEN 
+        TRY_CAST(
+          CONCAT(
+            SUBSTRING(release_date, LENGTH(release_date) - 3, 4), '-',
+            CASE 
+              WHEN SUBSTRING(release_date, 1, 3) = 'Jan' THEN '01'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Feb' THEN '02'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Mar' THEN '03'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Apr' THEN '04'
+              WHEN SUBSTRING(release_date, 1, 3) = 'May' THEN '05'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Jun' THEN '06'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Jul' THEN '07'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Aug' THEN '08'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Sep' THEN '09'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Oct' THEN '10'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Nov' THEN '11'
+              WHEN SUBSTRING(release_date, 1, 3) = 'Dec' THEN '12'
+            END, '-',
+            LPAD(TRIM(SUBSTRING(release_date, 5, POSITION(',' IN release_date) - 5)), 2, '0')
+          ) AS DATE
+        )
+      ELSE TRY_CAST(release_date AS DATE)
+    END AS release_date,
+    EXTRACT(YEAR FROM 
+      CASE 
+        WHEN release_date = 'To be announced' THEN NULL
+        WHEN release_date = 'NA' THEN NULL
+        WHEN release_date LIKE '%,%' THEN 
+          TRY_CAST(
+            CONCAT(
+              SUBSTRING(release_date, LENGTH(release_date) - 3, 4), '-',
+              CASE 
+                WHEN SUBSTRING(release_date, 1, 3) = 'Jan' THEN '01'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Feb' THEN '02'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Mar' THEN '03'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Apr' THEN '04'
+                WHEN SUBSTRING(release_date, 1, 3) = 'May' THEN '05'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Jun' THEN '06'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Jul' THEN '07'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Aug' THEN '08'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Sep' THEN '09'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Oct' THEN '10'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Nov' THEN '11'
+                WHEN SUBSTRING(release_date, 1, 3) = 'Dec' THEN '12'
+              END, '-',
+              LPAD(TRIM(SUBSTRING(release_date, 5, POSITION(',' IN release_date) - 5)), 2, '0')
+            ) AS DATE
+          )
+        ELSE TRY_CAST(release_date AS DATE)
+      END
+    ) AS release_year,
+    CASE 
+      WHEN is_free = true THEN 'Free'
+      ELSE 'Paid'
+    END AS price_category,
+    -- Platform counts
+    CAST(windows AS INTEGER) + CAST(mac AS INTEGER) + CAST(linux AS INTEGER) AS platform_count
+  FROM games_raw
+  WHERE name IS NOT NULL AND name != 'NA'
+")
+
+cat("Tables Created Successfully")
+tables <- dbGetQuery(con, "SHOW TABLES")
+print(tables)
+
+cat("Sample Counts")
+cat(sprintf("Games: %d", dbGetQuery(con, "SELECT COUNT(*) FROM games_clean")[[1]]))
+
+if ("developers" %in% tables$name) {
+  cat(sprintf("Developers: %d", dbGetQuery(con, "SELECT COUNT(*) FROM developers")[[1]]))
+}
+if ("publishers" %in% tables$name) {
+  cat(sprintf("Publishers: %d", dbGetQuery(con, "SELECT COUNT(*) FROM publishers")[[1]]))
+}
+if ("categories" %in% tables$name) {
+  cat(sprintf("Categories: %d", dbGetQuery(con, "SELECT COUNT(*) FROM categories")[[1]]))
+}
+if ("genres" %in% tables$name) {
+  cat(sprintf("Genres: %d", dbGetQuery(con, "SELECT COUNT(*) FROM genres")[[1]]))
+}
+if ("screenshots" %in% tables$name) {
+  cat(sprintf("Screenshots: %d", dbGetQuery(con, "SELECT COUNT(*) FROM screenshots")[[1]]))
+}
+if ("movies" %in% tables$name) {
+  cat(sprintf("Movies: %d", dbGetQuery(con, "SELECT COUNT(*) FROM movies")[[1]]))
+}
+
+cat("Sample Game Data")
+sample_games <- dbGetQuery(con, "SELECT app_id, name, type, release_year, is_free FROM games_clean LIMIT 10")
+print(sample_games)
+
+if ("genres" %in% tables$name) {
+  cat("Sample Genres")
+  sample_genres <- dbGetQuery(con, "SELECT * FROM genres LIMIT 10")
+  print(sample_genres)
+}
+
+
+# PART 2: ANALYTICAL INSIGHTS
+
+
+cat("insight 1: Top Genres by Game Count")
+insight1 <- dbGetQuery(con, "
+  SELECT 
+    genre_name,
+    COUNT(DISTINCT app_id) AS game_count,
+    ROUND(100.0 * COUNT(DISTINCT app_id) / (SELECT COUNT(*) FROM games_clean), 2) AS percentage
+  FROM genres
+  GROUP BY genre_name
+  ORDER BY game_count DESC
+  LIMIT 20
+")
+print(insight1)
+
+cat("Action and RPG genres typically dominate Steam, reflecting player preferences for interactive, engaging experiences.")
+# write.csv(insight1, "output_top_genres.csv", row.names = FALSE)
+
+
+cat("insight 2: Distribution of Game Release Years")
+insight2 <- dbGetQuery(con, "
+  SELECT 
+    release_year,
+    COUNT(*) AS game_count,
+    SUM(CASE WHEN is_free THEN 1 ELSE 0 END) AS free_games,
+    SUM(CASE WHEN NOT is_free THEN 1 ELSE 0 END) AS paid_games
+  FROM games_clean
+  WHERE release_year BETWEEN 2013 AND 2025
+  GROUP BY release_year
+  ORDER BY release_year DESC
+")
+print(insight2)
+
+cat("Release trends show the evolution of the Steam platform and gaming industry over time.")
+# write.csv(insight2, "output_release_years.csv", row.names = FALSE)
+
+
+
+cat("insight 3: Most Common Game Categories")
+insight3 <- dbGetQuery(con, "
+  SELECT 
+    category_name,
+    COUNT(DISTINCT app_id) AS game_count
+  FROM categories
+  GROUP BY category_name
+  ORDER BY game_count DESC
+  LIMIT 15
+")
+print(insight3)
+
+cat("Single-player games dominate, but multiplayer features are increasingly common.")
+# write.csv(insight3, "output_categories.csv", row.names = FALSE)
+
+
+cat("insught 4: Platform Support Distribution")
+insight4 <- dbGetQuery(con, "
+  SELECT 
+    CASE 
+      WHEN windows AND mac AND linux THEN 'All Platforms'
+      WHEN windows AND mac THEN 'Windows + Mac'
+      WHEN windows AND linux THEN 'Windows + Linux'
+      WHEN mac AND linux THEN 'Mac + Linux'
+      WHEN windows THEN 'Windows Only'
+      WHEN mac THEN 'Mac Only'
+      WHEN linux THEN 'Linux Only'
+      ELSE 'Unknown'
+    END AS platform_support,
+    COUNT(*) AS game_count,
+    ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS percentage
+  FROM games_clean
+  GROUP BY platform_support
+  ORDER BY game_count DESC
+")
+
+print(insight4)
+cat("Windows dominates, but cross-platform support is growing.")
+# write.csv(insight4, "output_platforms.csv", row.names = FALSE)
+
+
+cat("Game Types Distribution")
+insight5 <- dbGetQuery(con, "
+  SELECT 
+    type,
+    COUNT(*) AS game_count,
+    SUM(CASE WHEN is_free THEN 1 ELSE 0 END) AS free_count,
+    ROUND(100.0 * SUM(CASE WHEN is_free THEN 1 ELSE 0 END) / COUNT(*), 2) AS free_percentage
+  FROM games_clean
+  WHERE type IS NOT NULL AND type != 'NA'
+  GROUP BY type
+  ORDER BY game_count DESC
+")
+print(insight5)
+cat("Full games dominate, but demos and DLC show diverse content types.")
+# write.csv(insight5, "output_game_types.csv", row.names = FALSE)
+
+
+
+cat("Most Prolific Developers")
+insight6 <- dbGetQuery(con, "
+  SELECT 
+    d.developer,
+    COUNT(DISTINCT d.app_id) AS games_published,
+    SUM(CASE WHEN gc.is_free THEN 1 ELSE 0 END) AS free_games,
+    SUM(CASE WHEN NOT gc.is_free THEN 1 ELSE 0 END) AS paid_games
+  FROM developers d
+  INNER JOIN games_clean gc ON d.app_id = gc.app_id
+  GROUP BY d.developer
+  HAVING COUNT(DISTINCT d.app_id) >= 2
+  ORDER BY games_published DESC
+  LIMIT 20
+")
+
+print(insight6)
+cat("Developer productivity varies, with different strategies for free vs paid content.")
+# write.csv(insight6, "output_developers.csv", row.names = FALSE)
+
+# PART 3: DATA VISUALIZATION
+
+if (nrow(insight2) > 0) {
+  p1 <- ggplot(insight2, aes(x = release_year, y = game_count)) +
+    geom_bar(stat = "identity", fill = "#1b2838", color = "#66c0f4", width = 0.7) +
+    geom_text(aes(label = game_count), vjust = -0.5, size = 3.5, color = "#66c0f4") +
+    labs(
+      title = "Steam Game Releases by Year",
+      subtitle = sprintf("Dataset contains", nrow(games_df),"games"),
+      x = "Release Year",
+      y = "Number of Games"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(face = "bold", size = 14),
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+  
+  ggsave("steam_releases_by_year.png", p1, width = 10, height = 6, dpi = 300)
+  cat("Visualization saved: steam_releases_by_year.png")
+}
+
+cat("Processed",nrow(games_df),"games successfully!")
+dbDisconnect(con, shutdown = TRUE)

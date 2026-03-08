@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Mykola Utkin">
+
+<title>Exploring Data: From Web Scraping to OpenDota API</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Work_with_api_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Work_with_api_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="Work_with_api_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Work_with_api_files/libs/quarto-html/popper.min.js"></script>
+<script src="Work_with_api_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Work_with_api_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Work_with_api_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Work_with_api_files/libs/quarto-html/quarto-syntax-highlighting-c1f63da3e08f13bc72dc17e92cfd001d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Work_with_api_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Work_with_api_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Work_with_api_files/libs/bootstrap/bootstrap-212fae3dca4185ece6c8d8a700b56dac.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="Work_with_api_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+
+<script src="Work_with_api_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
+
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Exploring Data: From Web Scraping to OpenDota API</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Mykola Utkin </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="про-що-ця-робота" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Про що ця робота:</h1>
+<p>Коротко - тут я випробовував різні штуки з бібліотек <strong>httr2</strong> і <strong>rvest</strong></p>
+<p><strong>Частина №1</strong> - соціальне дослідження того в які країни краще їхати працювати психологом і бопомагати людям з суіцидальними поривами</p>
+<p><strong>Частина №2</strong> - дослідження того, які дані я зможу отримати про гру яку нещодавно сам же і зіграв через ресурс перегляду статистики матчів за допомогою API.</p>
+<section id="бермо-свою-першу-табличку-з-вікіпедії-про-коефіціент-самогубств-на-100-тис.-населення-і-нормуємо-її-прибираючи-перший-ряд-некоректних-заголовків." class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="бермо-свою-першу-табличку-з-вікіпедії-про-коефіціент-самогубств-на-100-тис.-населення-і-нормуємо-її-прибираючи-перший-ряд-некоректних-заголовків."><span class="header-section-number">1.1</span> Бермо свою першу табличку з вікіпедії про коефіціент самогубств на 100 тис. населення і нормуємо її прибираючи перший ряд некоректних заголовків.</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">"https://en.wikipedia.org/wiki/List_of_countries_by_suicide_rate"</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>page1 <span class="ot">&lt;-</span> <span class="fu">read_html</span>(url)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>suicide_list <span class="ot">&lt;-</span> page1 <span class="sc">|&gt;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_elements</span>(<span class="st">"table.wikitable"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_table</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>suicide_df <span class="ot">&lt;-</span> suicide_list[[<span class="dv">1</span>]]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>suicide_df <span class="ot">&lt;-</span> suicide_df[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(suicide_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Location"</span>, <span class="st">"Region"</span>, <span class="st">"All"</span>, <span class="st">"Male"</span>, <span class="st">"Female"</span>, <span class="st">"M/F"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="нижче-будуть-виведені-шматки-коду-які-я-перепробував-і-приходив-до-dead-end-у-кожен-раз.-тому-те-що-ви-бачите-зараз---результат-багатьох-спроб." class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="нижче-будуть-виведені-шматки-коду-які-я-перепробував-і-приходив-до-dead-end-у-кожен-раз.-тому-те-що-ви-бачите-зараз---результат-багатьох-спроб."><span class="header-section-number">1.2</span> Нижче будуть виведені шматки коду які я перепробував і приходив до dead-end-у кожен раз. Тому те що ви бачите зараз - результат <strong>багатьох</strong> спроб.</h2>
+<p><strong>ЛЮДЯМ З ВЕЛИКИМ СТАЖЕМ І/АБО СЛАБКИМИ НЕРВАМИ НЕ ДИВИТИСЯ</strong></p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># url &lt;- "https://uk.wikipedia.org/wiki/%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA_%D0%BA%D1%80%D0%B0%D1%97%D0%BD_%D0%B7%D0%B0_%D0%BD%D0%B0%D1%81%D0%B5%D0%BB%D0%B5%D0%BD%D0%BD%D1%8F%D0%BC"</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># m100 &lt;- read_html(url)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># tables &lt;- m100 |&gt; html_elements("table")</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># length(tables)  # to see how many tables exist</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf &lt;- tables[[3]]</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df &lt;- pre_iaaf |&gt; html_table(fill = TRUE)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># head(pre_iaaf_df)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># # тут вономені виводить непотрібні 2 рядки спочатку, і я їх хочу позбавитися через непотрібність і </span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># # через те що вони псують заголовки моїх стовбців</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- pre_iaaf_df[-c(1,2), ]</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># names(pre_iaaf_df_clean) &lt;- c(</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   "Місце", "Країна", "2006", "2009", "2012", "2015", "2021", "Щільність"</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- pre_iaaf_df_clean |&gt;</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(across(</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co">#     c("2006", "2009", "2012", "2015", "2021", "Щільність"),</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">#     ~str_replace_all(., "[^0-9]", "") |&gt; as.numeric()</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   ))</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df$`2006`[1:10]</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- pre_iaaf_df_clean |&gt;</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(across(</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">#     c("2006", "2009", "2012", "2015", "2021", "Щільність"),</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">#     ~ . |&gt;</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co">#       str_replace_all("[[:space:]]", "") |&gt;</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co">#       str_replace_all("[^0-9]", "") |&gt; </span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co">#       na_if("") |&gt; </span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co">#       as.numeric()</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co">#   ))</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># length(pre_iaf)</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co"># clean_numeric_columns &lt;- function(df) {</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co">#   df |&gt; </span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">#     mutate(across(</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co">#       -c(Країна),</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co">#       ~ .x |&gt;</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co">#         str_replace_all("[^0-9]", "") |&gt;  # все, крім цифр</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co">#         as.ineger()                      # в число</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co">#     ))</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- clean_numeric_columns(pre_iaaf_df_clean)</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Одна з робочих версій, однак мав відкинути її черз приколизтим що в результаті воно виводило ліст()</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="co"># url &lt;- "https://en.wikipedia.org/wiki/List_of_countries_by_suicide_rate"</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="co"># m100 &lt;- read_html(url)</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaf &lt;- m100 |&gt; </span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_elements(".wikitable sortable static-row-numbers sticky-header-multi sort-under-center col1left jquery-tablesorter") |&gt; </span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_elements("tbody") |&gt; </span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_table()</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaf</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="co"># url &lt;- "https://en.wikipedia.org/wiki/List_of_countries_by_suicide_rate"</span></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="co"># page1 &lt;- read_html(url)</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df &lt;- page1 |&gt;</span></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_elements("table.wikitable") |&gt;</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_children() |&gt;</span></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_table(fill = TRUE)</span></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df &lt;- suicide_df[2]</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="co"># length(suicide_df)</span></span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df &lt;- suicide_df[0:1]</span></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df</span></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a><span class="co"># # suicide_df &lt;- suicide_df[1:length(suicide_df)]</span></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="co"># # suicide_df</span></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="co"># colnames(suicide_df[[1]]) &lt;- c("Location", "Region", "All", "Male", "Female", "M/F")</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_clean &lt;- suicide_df |&gt;</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="co">#   clean_names() |&gt;</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(across(</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="co">#     c(all, male, female, mf),</span></span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="co">#     ~ str_replace_all(., "[^0-9.]", "") |&gt; na_if("") |&gt; as.numeric()</span></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="co">#   )) |&gt;</span></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(!is.na(country) &amp; country != "" &amp; !country %in% c("World", "—"))</span></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_clean</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="проміжна-таблиця-яка-презентує-нам-країни-з-найбільшою-кількістю-самогубств-на-100-тис.-населення" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="проміжна-таблиця-яка-презентує-нам-країни-з-найбільшою-кількістю-самогубств-на-100-тис.-населення"><span class="header-section-number">1.3</span> Проміжна таблиця яка презентує нам країни з найбільшою кількістю самогубств на 100 тис. населення</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>suicide_clean <span class="sc">|&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(All, <span class="at">n =</span> <span class="dv">15</span>) <span class="sc">|&gt;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(Location, All), <span class="at">y =</span> All, <span class="at">fill =</span> Region)) <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Top 15 Countries by Suicide Mortality Rate (WHO, 2021)"</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Suicides per 100K population"</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="cn">NULL</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Work_with_api_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="етап-2---беремо-до-уваги-не-лише-значення-на-100-тис.-осіб-але-і-фактичне-значення-людей-адже-великий-відсоток-самогубств-в-малій-країні---менше-клієнтів-аніж-якби-їх-було-багато-з-такою-ж-самою-щільністю" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="етап-2---беремо-до-уваги-не-лише-значення-на-100-тис.-осіб-але-і-фактичне-значення-людей-адже-великий-відсоток-самогубств-в-малій-країні---менше-клієнтів-аніж-якби-їх-було-багато-з-такою-ж-самою-щільністю"><span class="header-section-number">1.4</span> Етап №2 - беремо до уваги не лише значення на 100 тис. осіб, але і фактичне значення людей, адже великий відсоток самогубств в малій країні -&gt; менше клієнтів, аніж якби їх було багато з такою ж самою щільністю</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">"https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population"</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>page2 <span class="ot">&lt;-</span> <span class="fu">read_html</span>(url)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>page2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>{html_document}
+&lt;html class="client-nojs vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-page-tools-pinned-disabled vector-feature-toc-pinned-clientpref-1 vector-feature-main-menu-pinned-disabled vector-feature-limited-width-clientpref-1 vector-feature-limited-width-content-enabled vector-feature-custom-font-size-clientpref-1 vector-feature-appearance-pinned-clientpref-1 vector-feature-night-mode-enabled skin-theme-clientpref-day vector-sticky-header-enabled vector-toc-available" lang="en" dir="ltr"&gt;
+[1] &lt;head&gt;\n&lt;meta http-equiv="Content-Type" content="text/html; charset=UTF-8 ...
+[2] &lt;body class="skin--responsive skin-vector skin-vector-search-vue mediawik ...</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>dell <span class="ot">&lt;-</span> page2 <span class="sc">|&gt;</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_elements</span>(<span class="st">"table.wikitable"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_children</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_table</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>dell <span class="ot">&lt;-</span> dell[[<span class="dv">2</span>]]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>dell <span class="ot">&lt;-</span> dell <span class="sc">|&gt;</span> </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="st">"% ofworld"</span>, <span class="sc">-</span><span class="st">"Date"</span>, <span class="sc">-</span><span class="st">"Source (official or fromthe United Nations)"</span>, <span class="sc">-</span><span class="st">"Notes"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>dell <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["Location"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Population"],"name":[2],"type":["chr"],"align":["left"]}],"data":[{"1":"World","2":"8,232,000,000"},{"1":"India","2":"1,417,492,000"},{"1":"China","2":"1,408,280,000"},{"1":"United States","2":"340,110,988"},{"1":"Indonesia","2":"284,438,782"},{"1":"Pakistan","2":"241,499,431"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+</section>
+<section id="після-того-як-ми-почистили-наш-датасет-від-непотрібних-колонок-ми-можемо-обєднити-наші-таблички-в-одну-і-вже-за-простою-формулою-порахувати-реальну-кількість-випадків." class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="після-того-як-ми-почистили-наш-датасет-від-непотрібних-колонок-ми-можемо-обєднити-наші-таблички-в-одну-і-вже-за-простою-формулою-порахувати-реальну-кількість-випадків."><span class="header-section-number">1.5</span> Після того як ми почистили наш датасет від непотрібних колонок ми можемо об’єднити наші таблички в одну і вже за простою формулою порахувати <strong>реальну</strong> кількість випадків.</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">=</span> <span class="fu">merge</span>(dell, suicide_clean,<span class="at">by=</span><span class="st">"Location"</span>,<span class="at">all=</span><span class="cn">TRUE</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span> janitor<span class="sc">::</span><span class="fu">clean_names</span>()</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># data_inner &lt;- data_inner |&gt;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(location = reorder(location, all))</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(<span class="fu">c</span>(all, male, female, m_f), <span class="sc">~</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">","</span>, <span class="st">""</span>, .x))),</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">location =</span> <span class="fu">reorder</span>(location, <span class="sc">-</span>all, <span class="at">FUN =</span> <span class="cf">function</span>(x) <span class="fu">ifelse</span>(<span class="fu">is.na</span>(x), <span class="dv">0</span>, x))</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(data_inner<span class="sc">$</span>location)[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "Lesotho"      "South Korea"  "Eswatini"     "Guyana"       "Uruguay"     
+ [6] "South Africa" "Suriname"     "Lithuania"    "Russia"       "Ukraine"     </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(<span class="fu">c</span>(all, male, female, m_f), <span class="sc">~</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">","</span>, <span class="st">""</span>, .x)))</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(all)) <span class="sc">|&gt;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">location =</span> <span class="fu">factor</span>(location, <span class="at">levels =</span> <span class="fu">unique</span>(location)))</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>data_inner</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["location"],"name":[1],"type":["fct"],"align":["left"]},{"label":["population"],"name":[2],"type":["chr"],"align":["left"]},{"label":["region"],"name":[3],"type":["chr"],"align":["left"]},{"label":["all"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["male"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["female"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["m_f"],"name":[7],"type":["dbl"],"align":["right"]}],"data":[{"1":"Lesotho","2":"2,116,427","3":"Africa","4":"28.7","5":"41.4","6":"16.6","7":"2.5"},{"1":"South Korea","2":"51,159,889","3":"Asia","4":"27.5","5":"38.2","6":"16.9","7":"2.3"},{"1":"Eswatini","2":"1,235,549","3":"Africa","4":"27.2","5":"45.0","6":"10.1","7":"4.5"},{"1":"Guyana","2":"772,975","3":"Americas","4":"24.8","5":"39.9","6":"10.4","7":"3.8"},{"1":"Uruguay","2":"3,499,451","3":"Americas","4":"24.8","5":"39.9","6":"10.5","7":"3.8"},{"1":"South Africa","2":"63,100,945","3":"Africa","4":"22.3","5":"35.4","6":"9.9","7":"3.6"},{"1":"Suriname","2":"616,500","3":"Americas","4":"22.3","5":"30.5","6":"14.0","7":"2.2"},{"1":"Lithuania","2":"2,894,548","3":"Europe","4":"22.1","5":"36.7","6":"9.2","7":"4.0"},{"1":"Russia","2":"146,028,325","3":"Europe","4":"21.4","5":"36.7","6":"8.1","7":"4.5"},{"1":"Ukraine","2":"32,862,000","3":"Europe","4":"21.2","5":"37.7","6":"6.9","7":"5.4"},{"1":"Micronesia","2":"105,564","3":"Oceania","4":"19.8","5":"31.1","6":"8.6","7":"3.6"},{"1":"Solomon Islands","2":"750,325","3":"Oceania","4":"19.6","5":"29.2","6":"9.6","7":"3.0"},{"1":"Slovenia","2":"2,130,638","3":"Europe","4":"18.9","5":"29.9","6":"7.7","7":"3.9"},{"1":"Mongolia","2":"3,544,835","3":"Asia","4":"18.5","5":"32.2","6":"4.8","7":"6.7"},{"1":"Belgium","2":"11,825,551","3":"Europe","4":"18.4","5":"26.2","6":"10.7","7":"2.4"},{"1":"Kiribati","2":"120,740","3":"Oceania","4":"17.5","5":"31.0","6":"4.8","7":"6.5"},{"1":"Japan","2":"123,300,000","3":"Asia","4":"17.4","5":"23.6","6":"11.5","7":"2.0"},{"1":"Zimbabwe","2":"17,073,087","3":"Africa","4":"17.3","5":"23.6","6":"11.7","7":"2.0"},{"1":"France","2":"68,706,000","3":"Europe","4":"16.6","5":"24.1","6":"9.5","7":"2.5"},{"1":"Thailand","2":"65,859,640","3":"Asia","4":"16.6","5":"28.2","6":"5.5","7":"5.1"},{"1":"Hungary","2":"9,539,502","3":"Europe","4":"16.5","5":"26.2","6":"7.5","7":"3.5"},{"1":"Croatia","2":"3,866,233","3":"Europe","4":"15.7","5":"25.1","6":"6.9","7":"3.6"},{"1":"Vanuatu","2":"321,409","3":"Oceania","4":"15.7","5":"24.7","6":"6.6","7":"3.7"},{"1":"Belarus","2":"9,109,280","3":"Europe","4":"15.6","5":"27.7","6":"5.1","7":"5.4"},{"1":"United States","2":"340,110,988","3":"Americas","4":"15.6","5":"24.7","6":"6.5","7":"3.8"},{"1":"Latvia","2":"1,829,400","3":"Europe","4":"15.2","5":"27.5","6":"4.6","7":"6.0"},{"1":"Serbia","2":"6,567,783","3":"Europe","4":"15.1","5":"23.0","6":"8.0","7":"2.9"},{"1":"Cape Verde","2":"491,233","3":"Africa","4":"14.9","5":"25.3","6":"4.2","7":"6.0"},{"1":"Estonia","2":"1,369,995","3":"Europe","4":"14.9","5":"25.1","6":"5.8","7":"4.3"},{"1":"Sri Lanka","2":"21,763,170","3":"Asia","4":"14.7","5":"24.2","6":"5.9","7":"4.1"},{"1":"Finland","2":"5,650,325","3":"Europe","4":"14.6","5":"20.5","6":"8.8","7":"2.3"},{"1":"Kazakhstan","2":"20,426,568","3":"Asia","4":"14.6","5":"24.4","6":"5.3","7":"4.6"},{"1":"Austria","2":"9,200,931","3":"Europe","4":"14.5","5":"23.6","6":"5.7","7":"4.1"},{"1":"Moldova","2":"2,381,300","3":"Europe","4":"14.1","5":"24.8","6":"5.0","7":"5.0"},{"1":"Switzerland","2":"9,082,848","3":"Europe","4":"14.0","5":"18.9","6":"9.2","7":"2.1"},{"1":"Cuba","2":"9,748,007","3":"Americas","4":"13.8","5":"23.5","6":"4.3","7":"5.5"},{"1":"Sweden","2":"10,596,652","3":"Europe","4":"13.8","5":"18.9","6":"8.7","7":"2.2"},{"1":"Poland","2":"37,392,000","3":"Europe","4":"13.7","5":"24.1","6":"3.8","7":"6.3"},{"1":"Czech Republic","2":"10,882,341","3":"Europe","4":"13.3","5":"21.2","6":"5.7","7":"3.7"},{"1":"Trinidad and Tobago","2":"1,367,764","3":"Americas","4":"13.3","5":"22.2","6":"4.6","7":"4.8"},{"1":"Eritrea","2":"3,607,000","3":"Africa","4":"13.2","5":"19.4","6":"7.2","7":"2.7"},{"1":"Norway","2":"5,606,944","3":"Europe","4":"13.2","5":"18.9","6":"7.4","7":"2.6"},{"1":"Australia","2":"27,536,874","3":"Oceania","4":"13.1","5":"19.5","6":"6.7","7":"2.9"},{"1":"Germany","2":"83,491,249","3":"Europe","4":"12.9","5":"18.4","6":"7.6","7":"2.4"},{"1":"India","2":"1,417,492,000","3":"Asia","4":"12.6","5":"13.8","6":"11.2","7":"1.2"},{"1":"Samoa","2":"205,557","3":"Oceania","4":"12.0","5":"17.0","6":"7.0","7":"2.4"},{"1":"Iceland","2":"391,810","3":"Europe","4":"11.9","5":"14.4","6":"9.3","7":"1.5"},{"1":"New Zealand","2":"5,324,700","3":"Oceania","4":"11.9","5":"17.9","6":"6.1","7":"2.9"},{"1":"Netherlands","2":"18,100,436","3":"Europe","4":"11.5","5":"15.4","6":"7.6","7":"2.0"},{"1":"Portugal","2":"10,749,635","3":"Europe","4":"11.5","5":"17.7","6":"5.9","7":"3.0"},{"1":"Montenegro","2":"623,327","3":"Europe","4":"11.3","5":"17.1","6":"6.0","7":"2.9"},{"1":"Mozambique","2":"34,090,466","3":"Africa","4":"10.6","5":"15.6","6":"6.0","7":"2.6"},{"1":"Denmark","2":"6,004,342","3":"Europe","4":"10.5","5":"14.7","6":"6.3","7":"2.3"},{"1":"Mauritius","2":"1,243,741","3":"Africa","4":"10.5","5":"18.0","6":"3.0","7":"6.0"},{"1":"Nepal","2":"29,911,840","3":"Asia","4":"10.1","5":"13.3","6":"7.2","7":"1.8"},{"1":"Slovakia","2":"5,413,813","3":"Europe","4":"9.9","5":"17.1","6":"3.0","7":"5.7"},{"1":"Romania","2":"19,036,031","3":"Europe","4":"9.6","5":"16.4","6":"3.3","7":"5.0"},{"1":"Bulgaria","2":"6,437,360","3":"Europe","4":"9.5","5":"15.2","6":"4.2","7":"3.6"},{"1":"United Kingdom","2":"69,281,437","3":"Europe","4":"9.5","5":"14.7","6":"4.6","7":"3.2"},{"1":"Canada","2":"41,651,653","3":"Americas","4":"9.4","5":"14.2","6":"4.7","7":"3.0"},{"1":"North Korea","2":"25,950,000","3":"Asia","4":"9.3","5":"10.5","6":"8.1","7":"1.3"},{"1":"Togo","2":"8,095,498","3":"Africa","4":"9.3","5":"14.6","6":"4.0","7":"3.7"},{"1":"Central African Republic","2":"6,470,307","3":"Africa","4":"9.2","5":"14.7","6":"4.0","7":"3.7"},{"1":"Bosnia and Herzegovina","2":"3,422,000","3":"Europe","4":"9.0","5":"13.7","6":"4.7","7":"2.9"},{"1":"China","2":"1,408,280,000","3":"Asia","4":"8.9","5":"10.3","6":"7.5","7":"1.4"},{"1":"DR Congo","2":"NA","3":"Africa","4":"8.8","5":"13.7","6":"3.9","7":"3.5"},{"1":"Rwanda","2":"14,104,969","3":"Africa","4":"8.7","5":"12.8","6":"4.8","7":"2.7"},{"1":"Spain","2":"49,315,949","3":"Europe","4":"8.7","5":"13.1","6":"4.5","7":"2.9"},{"1":"Namibia","2":"3,022,401","3":"Africa","4":"8.6","5":"13.9","6":"3.6","7":"3.9"},{"1":"Venezuela","2":"28,517,000","3":"Americas","4":"8.6","5":"15.4","6":"2.0","7":"7.7"},{"1":"Burkina Faso","2":"24,070,553","3":"Africa","4":"8.5","5":"13.0","6":"4.0","7":"3.3"},{"1":"Cameroon","2":"29,442,327","3":"Africa","4":"8.5","5":"13.5","6":"3.5","7":"3.9"},{"1":"Ireland","2":"5,458,600","3":"Europe","4":"8.5","5":"12.6","6":"4.6","7":"2.7"},{"1":"Botswana","2":"2,359,609","3":"Africa","4":"8.4","5":"11.2","6":"5.5","7":"2.0"},{"1":"Fiji","2":"900,869","3":"Oceania","4":"8.3","5":"11.2","6":"5.3","7":"2.1"},{"1":"Uzbekistan","2":"37,859,698","3":"Asia","4":"8.3","5":"10.6","6":"6.1","7":"1.7"},{"1":"Luxembourg","2":"681,973","3":"Europe","4":"8.2","5":"12.1","6":"4.3","7":"2.8"},{"1":"Angola","2":"36,170,961","3":"Africa","4":"8.1","5":"12.5","6":"3.9","7":"3.2"},{"1":"Costa Rica","2":"5,309,625","3":"Americas","4":"8.1","5":"13.5","6":"2.8","7":"4.8"},{"1":"Singapore","2":"6,110,200","3":"Asia","4":"8.1","5":"11.1","6":"4.9","7":"2.3"},{"1":"Djibouti","2":"1,066,809","3":"Africa","4":"8.0","5":"9.6","6":"6.4","7":"1.5"},{"1":"Somalia","2":"19,655,000","3":"Africa","4":"8.0","5":"9.8","6":"6.1","7":"1.6"},{"1":"Argentina","2":"46,735,004","3":"Americas","4":"7.9","5":"12.6","6":"3.4","7":"3.7"},{"1":"South Sudan","2":"15,786,898","3":"Africa","4":"7.9","5":"12.1","6":"3.9","7":"3.1"},{"1":"Haiti","2":"11,867,032","3":"Americas","4":"7.8","5":"10.6","6":"5.1","7":"2.1"},{"1":"Burundi","2":"12,332,788","3":"Africa","4":"7.7","5":"11.5","6":"3.9","7":"2.9"},{"1":"Chile","2":"20,206,953","3":"Americas","4":"7.7","5":"12.3","6":"3.1","7":"4.0"},{"1":"Guinea-Bissau","2":"1,781,308","3":"Africa","4":"7.7","5":"11.6","6":"3.9","7":"3.0"},{"1":"Brazil","2":"213,421,037","3":"Americas","4":"7.6","5":"11.4","6":"3.9","7":"2.9"},{"1":"Ecuador","2":"18,103,660","3":"Americas","4":"7.6","5":"12.5","6":"2.6","7":"4.8"},{"1":"El Salvador","2":"6,029,976","3":"Americas","4":"7.6","5":"12.6","6":"3.2","7":"3.9"},{"1":"Malawi","2":"20,734,262","3":"Africa","4":"7.6","5":"12.5","6":"2.9","7":"4.3"},{"1":"Ivory Coast","2":"31,719,275","3":"Africa","4":"7.4","5":"12.0","6":"2.6","7":"4.6"},{"1":"Gabon","2":"2,469,296","3":"Africa","4":"7.3","5":"12.0","6":"2.4","7":"5.0"},{"1":"Vietnam","2":"101,343,800","3":"Asia","4":"7.3","5":"10.4","6":"4.3","7":"2.4"},{"1":"Benin","2":"13,224,860","3":"Africa","4":"7.1","5":"11.1","6":"3.1","7":"3.6"},{"1":"Zambia","2":"19,693,423","3":"Africa","4":"7.1","5":"11.2","6":"3.1","7":"3.6"},{"1":"Equatorial Guinea","2":"1,668,768","3":"Africa","4":"7.0","5":"10.2","6":"3.5","7":"2.9"},{"1":"Italy","2":"58,927,633","3":"Europe","4":"7.0","5":"10.5","6":"3.6","7":"2.9"},{"1":"Mexico","2":"130,575,786","3":"Americas","4":"7.0","5":"11.6","6":"2.6","7":"4.5"},{"1":"Kyrgyzstan","2":"7,281,800","3":"Asia","4":"6.8","5":"10.5","6":"3.1","7":"3.4"},{"1":"Senegal","2":"18,593,258","3":"Africa","4":"6.8","5":"10.4","6":"3.0","7":"3.5"},{"1":"Turkmenistan","2":"7,057,841","3":"Asia","4":"6.8","5":"10.3","6":"3.5","7":"2.9"},{"1":"Congo","2":"NA","3":"Africa","4":"6.7","5":"10.1","6":"3.3","7":"3.1"},{"1":"Malta","2":"574,250","3":"Europe","4":"6.5","5":"8.4","6":"4.4","7":"1.9"},{"1":"Paraguay","2":"6,109,644","3":"Americas","4":"6.4","5":"8.0","6":"4.7","7":"1.7"},{"1":"Ethiopia","2":"111,652,998","3":"Africa","4":"6.1","5":"9.1","6":"3.1","7":"2.9"},{"1":"Madagascar","2":"31,727,042","3":"Africa","4":"6.1","5":"8.7","6":"3.5","7":"2.5"},{"1":"Sierra Leone","2":"9,077,691","3":"Africa","4":"6.1","5":"7.8","6":"4.5","7":"1.7"},{"1":"Comoros","2":"870,038","3":"Africa","4":"6.0","5":"7.5","6":"4.5","7":"1.7"},{"1":"Liberia","2":"5,248,621","3":"Africa","4":"6.0","5":"8.0","6":"3.9","7":"2.1"},{"1":"North Macedonia","2":"1,826,247","3":"Europe","4":"5.8","5":"7.9","6":"3.8","7":"2.1"},{"1":"Malaysia","2":"34,231,700","3":"Asia","4":"5.7","5":"8.8","6":"2.2","7":"4.0"},{"1":"Pakistan","2":"241,499,431","3":"Asia","4":"5.6","5":"8.0","6":"3.2","7":"2.5"},{"1":"Uganda","2":"45,905,417","3":"Africa","4":"5.5","5":"8.8","6":"2.3","7":"3.8"},{"1":"Chad","2":"19,340,757","3":"Africa","4":"5.3","5":"7.4","6":"3.0","7":"2.5"},{"1":"Ghana","2":"33,742,380","3":"Africa","4":"5.3","5":"8.3","6":"2.3","7":"3.6"},{"1":"Saint Lucia","2":"184,100","3":"Americas","4":"5.3","5":"9.3","6":"1.3","7":"7.2"},{"1":"Georgia","2":"3,704,500","3":"Europe","4":"5.1","5":"9.5","6":"1.3","7":"7.3"},{"1":"Tanzania","2":"68,153,004","3":"Africa","4":"5.1","5":"7.5","6":"2.7","7":"2.8"},{"1":"Colombia","2":"53,057,212","3":"Americas","4":"5.0","5":"7.9","6":"2.1","7":"3.8"},{"1":"Libya","2":"7,459,000","3":"Africa","4":"5.0","5":"7.2","6":"2.7","7":"2.7"},{"1":"Nigeria","2":"223,800,000","3":"Africa","4":"5.0","5":"8.4","6":"1.5","7":"5.6"},{"1":"Bhutan","2":"784,043","3":"Asia","4":"4.9","5":"6.2","6":"2.4","7":"2.6"},{"1":"Guatemala","2":"18,079,810","3":"Americas","4":"4.9","5":"7.1","6":"2.8","7":"2.5"},{"1":"Gambia","2":"2,422,712","3":"Africa","4":"4.8","5":"6.5","6":"3.1","7":"2.1"},{"1":"Guinea","2":"14,363,931","3":"Africa","4":"4.8","5":"18.9","6":"3.5","7":"5.4"},{"1":"Bahrain","2":"1,594,654","3":"Asia","4":"4.7","5":"6.6","6":"1.5","7":"4.4"},{"1":"Greece","2":"10,400,720","3":"Europe","4":"4.7","5":"7.9","6":"1.6","7":"4.9"},{"1":"Qatar","2":"3,173,024","3":"Asia","4":"4.7","5":"6.2","6":"0.8","7":"7.8"},{"1":"Tonga","2":"100,179","3":"Oceania","4":"4.7","5":"6.0","6":"3.5","7":"1.7"},{"1":"Kenya","2":"53,330,978","3":"Africa","4":"4.6","5":"6.7","6":"2.5","7":"2.7"},{"1":"Laos","2":"7,647,000","3":"Asia","4":"4.6","5":"6.5","6":"2.6","7":"2.5"},{"1":"Cambodia","2":"17,577,760","3":"Asia","4":"4.5","5":"6.3","6":"2.7","7":"2.3"},{"1":"Niger","2":"26,312,034","3":"Africa","4":"4.5","5":"5.9","6":"3.0","7":"2.0"},{"1":"Israel","2":"10,134,800","3":"Asia","4":"4.4","5":"6.3","6":"2.4","7":"2.6"},{"1":"Seychelles","2":"122,729","3":"Africa","4":"4.3","5":"6.3","6":"1.7","7":"3.7"},{"1":"Belize","2":"417,634","3":"Americas","4":"4.2","5":"6.8","6":"1.5","7":"4.5"},{"1":"Bolivia","2":"11,365,333","3":"Americas","4":"4.2","5":"6.0","6":"2.4","7":"2.5"},{"1":"Dominican Republic","2":"10,771,504","3":"Americas","4":"4.2","5":"6.9","6":"1.5","7":"4.6"},{"1":"Mali","2":"22,395,489","3":"Africa","4":"4.2","5":"5.5","6":"2.8","7":"2.0"},{"1":"Nicaragua","2":"6,803,886","3":"Americas","4":"4.2","5":"6.9","6":"1.7","7":"4.1"},{"1":"Yemen","2":"32,684,503","3":"Asia","4":"4.2","5":"5.6","6":"2.8","7":"2.0"},{"1":"Iran","2":"85,961,000","3":"Asia","4":"4.1","5":"5.8","6":"2.3","7":"2.5"},{"1":"Afghanistan","2":"43,844,000","3":"Asia","4":"3.6","5":"4.8","6":"2.4","7":"2.0"},{"1":"Timor-Leste","2":"1,391,221","3":"Asia","4":"3.6","5":"4.8","6":"2.3","7":"2.1"},{"1":"Barbados","2":"267,800","3":"Americas","4":"3.5","5":"6.3","6":"1.0","7":"6.3"},{"1":"Philippines","2":"114,123,600","3":"Asia","4":"3.5","5":"5.2","6":"1.8","7":"2.9"},{"1":"Bahamas","2":"398,165","3":"Americas","4":"3.3","5":"5.9","6":"0.8","7":"7.4"},{"1":"Panama","2":"4,064,780","3":"Americas","4":"3.3","5":"5.6","6":"1.0","7":"5.6"},{"1":"Sudan","2":"51,662,000","3":"Africa","4":"3.2","5":"3.9","6":"2.4","7":"1.6"},{"1":"Brunei","2":"455,500","3":"Asia","4":"3.0","5":"5.2","6":"0.6","7":"8.7"},{"1":"Cyprus","2":"966,400","3":"Europe","4":"3.0","5":"3.8","6":"2.2","7":"1.7"},{"1":"Honduras","2":"9,892,632","3":"Americas","4":"3.0","5":"5.0","6":"0.9","7":"5.6"},{"1":"Iraq","2":"46,118,793","3":"Asia","4":"3.0","5":"4.4","6":"1.5","7":"2.9"},{"1":"Morocco","2":"36,828,330","3":"Africa","4":"2.9","5":"3.4","6":"2.4","7":"1.4"},{"1":"Myanmar","2":"51,316,756","3":"Asia","4":"2.9","5":"4.8","6":"1.0","7":"4.8"},{"1":"Albania","2":"2,363,314","3":"Europe","4":"2.8","5":"3.2","6":"2.3","7":"1.4"},{"1":"Bangladesh","2":"169,828,911","3":"Asia","4":"2.8","5":"3.6","6":"2.0","7":"1.8"},{"1":"Mauritania","2":"4,927,532","3":"Africa","4":"2.7","5":"3.7","6":"1.7","7":"2.2"},{"1":"Turkey","2":"85,664,944","3":"Europe","4":"2.7","5":"4.3","6":"1.1","7":"3.9"},{"1":"Armenia","2":"3,081,100","3":"Europe","4":"2.5","5":"4.2","6":"1.0","7":"4.2"},{"1":"Tajikistan","2":"10,499,000","3":"Asia","4":"2.4","5":"3.6","6":"1.3","7":"2.8"},{"1":"Kuwait","2":"4,881,254","3":"Asia","4":"2.3","5":"3.6","6":"0.3","7":"12.0"},{"1":"Algeria","2":"47,400,000","3":"Africa","4":"2.2","5":"3.0","6":"1.3","7":"2.3"},{"1":"Papua New Guinea","2":"11,781,559","3":"Oceania","4":"1.8","5":"2.2","6":"1.4","7":"1.6"},{"1":"Tunisia","2":"11,972,169","3":"Africa","4":"1.8","5":"2.5","6":"1.2","7":"2.1"},{"1":"Jamaica","2":"2,825,544","3":"Americas","4":"1.7","5":"3.0","6":"0.4","7":"7.5"},{"1":"United Arab Emirates","2":"11,294,243","3":"Asia","4":"1.7","5":"2.5","6":"0.4","7":"6.3"},{"1":"Azerbaijan","2":"10,241,722","3":"Europe","4":"1.6","5":"2.3","6":"0.8","7":"2.9"},{"1":"Antigua and Barbuda","2":"103,603","3":"Americas","4":"1.5","5":"1.6","6":"1.3","7":"1.2"},{"1":"Maldives","2":"515,132","3":"Asia","4":"1.5","5":"2.2","6":"0.3","7":"7.3"},{"1":"Peru","2":"34,350,244","3":"Americas","4":"1.5","5":"2.3","6":"0.8","7":"2.9"},{"1":"Grenada","2":"109,021","3":"Americas","4":"1.3","5":"1.9","6":"0.7","7":"2.7"},{"1":"Indonesia","2":"284,438,782","3":"Asia","4":"1.2","5":"1.5","6":"0.9","7":"1.7"},{"1":"Oman","2":"5,306,976","3":"Asia","4":"0.9","5":"1.4","6":"0.2","7":"7.0"},{"1":"São Tomé and Príncipe","2":"209,607","3":"Africa","4":"0.9","5":"1.3","6":"0.4","7":"3.3"},{"1":"Saudi Arabia","2":"35,300,280","3":"Asia","4":"0.9","5":"1.1","6":"0.7","7":"1.6"},{"1":"Lebanon","2":"5,490,000","3":"Asia","4":"0.7","5":"0.9","6":"0.6","7":"1.5"},{"1":"Egypt","2":"107,271,260","3":"Africa","4":"0.6","5":"0.9","6":"0.3","7":"3.0"},{"1":"Jordan","2":"11,734,000","3":"Asia","4":"0.6","5":"0.9","6":"0.3","7":"3.0"},{"1":"Syria","2":"25,902,673","3":"Asia","4":"0.6","5":"0.9","6":"0.3","7":"3.3"},{"1":"Saint Vincent and the Grenadines","2":"110,872","3":"Americas","4":"0.4","5":"0.8","6":"0.0","7":"NA"},{"1":"Abkhazia","2":"244,236","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"American Samoa (US)","2":"49,710","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Andorra","2":"88,406","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Anguilla (UK)","2":"16,010","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Aruba (Netherlands)","2":"107,566","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Bermuda (UK)","2":"64,055","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Bonaire (Netherlands)","2":"26,552","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"British Virgin Islands (UK)","2":"39,471","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Cayman Islands (UK)","2":"84,738","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Christmas Island (Australia)","2":"1,692","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Cocos (Keeling) Islands (Australia)","2":"593","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Cook Islands (New Zealand)","2":"15,040","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Curaçao (Netherlands)","2":"156,115","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Democratic Republic of the Congo","2":"112,832,000","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Dominica","2":"67,408","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Falkland Islands (UK)","2":"3,662","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Faroe Islands (Denmark)","2":"54,885","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"French Polynesia (France)","2":"279,500","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Gibraltar (UK)","2":"38,000","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Greenland (Denmark)","2":"56,542","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Guam (US)","2":"153,836","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Guernsey (UK)","2":"64,781","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Hong Kong (China)","2":"7,527,500","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Isle of Man (UK)","2":"84,530","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Jersey (UK)","2":"103,267","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Kosovo","2":"1,585,566","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Liechtenstein","2":"40,900","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Macau (China)","2":"685,900","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Marshall Islands","2":"42,418","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Monaco","2":"38,423","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Montserrat (UK)","2":"4,386","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Nauru","2":"11,680","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"New Caledonia (France)","2":"264,596","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Niue (New Zealand)","2":"1,681","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Norfolk Island (Australia)","2":"2,188","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Northern Cyprus","2":"476,214","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Northern Mariana Islands (US)","2":"47,329","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Palau","2":"16,733","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Palestine","2":"5,483,450","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Pitcairn Islands (UK)","2":"35","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Puerto Rico (US)","2":"3,203,295","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Republic of the Congo","2":"6,142,180","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Saba (Netherlands)","2":"2,158","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Saint Barthélemy (France)","2":"10,562","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Saint Helena, Ascension and Tristan da Cunha (UK)","2":"5,651","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Saint Kitts and Nevis","2":"51,320","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Saint Martin (France)","2":"31,496","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Saint Pierre and Miquelon (France)","2":"5,819","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"San Marino","2":"34,132","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Sint Maarten (Netherlands)","2":"41,349","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"South Ossetia","2":"56,520","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Taiwan","2":"23,337,936","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Tokelau (New Zealand)","2":"1,647","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Transnistria","2":"360,938","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Turks and Caicos Islands (UK)","2":"50,828","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Tuvalu","2":"10,643","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"U.S. Virgin Islands (US)","2":"87,146","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Vatican City","2":"882","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Wallis and Futuna (France)","2":"11,620","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"Western Sahara (disputed)","2":"600,904","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"},{"1":"World","2":"8,232,000,000","3":"NA","4":"NA","5":"NA","6":"NA","7":"NA"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+</section>
+<section id="простенькою-формулою-я-обчислюю-реальну-кількість-випадків-і-збираю-в-зручному-форматі." class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="простенькою-формулою-я-обчислюю-реальну-кількість-випадків-і-збираю-в-зручному-форматі."><span class="header-section-number">1.6</span> Простенькою формулою я обчислюю реальну кількість випадків і збираю в зручному форматі.</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">population =</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">","</span>, <span class="st">""</span>, population)),</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">all =</span> <span class="fu">as.numeric</span>(all),</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">est_deaths =</span> (all <span class="sc">/</span> <span class="dv">100000</span>) <span class="sc">*</span> population</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>top15_deaths <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(est_deaths)) <span class="sc">|&gt;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(est_deaths)) <span class="sc">|&gt;</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">15</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="ну-і-отримуємо-нашу-візуалізацію-того-куди-краще-їхати-на-роботу-і-яку-мову-вчити-також-важливо-робити-поправки-на-реалістичність-ситуації-те-що-вони-чудово-корелюють-на-графіку-ще-не-означає-що-це-єдиний-фактор-впливу-на-такі-випадки." class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="ну-і-отримуємо-нашу-візуалізацію-того-куди-краще-їхати-на-роботу-і-яку-мову-вчити-також-важливо-робити-поправки-на-реалістичність-ситуації-те-що-вони-чудово-корелюють-на-графіку-ще-не-означає-що-це-єдиний-фактор-впливу-на-такі-випадки."><span class="header-section-number">1.7</span> Ну і отримуємо нашу візуалізацію того, куди краще їхати на роботу і яку мову вчити, також важливо робити поправки на реалістичність ситуації, те що вони чудово корелюють на графіку ще не означає що це єдиний фактор впливу на такі випадки.</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Work_with_api_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="частина-2---дослидження-корисності-людей-які-зіграли-з-вами-нещодавно-в-гру" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Частина №2 - дослидження <strong>корисності</strong> людей які зіграли з вами нещодавно в гру</h1>
+<section id="перщопочатково-ідея-була-взагалі-інша---я-хотів-з-сайту-fred-взяти-датасет-по-країнам-і-дослідити-інфлаяцію-за-той-рік-однак-проблема-буловтому-що-підходящого-датасету-там-не-знайшлося-а-дані-бралися-незрозуміло-звідки-тому-через-брак-часу-і-небажання-шукати-стовідсотково-підходящий-варіант-ця-ідея-була-відкинута" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="перщопочатково-ідея-була-взагалі-інша---я-хотів-з-сайту-fred-взяти-датасет-по-країнам-і-дослідити-інфлаяцію-за-той-рік-однак-проблема-буловтому-що-підходящого-датасету-там-не-знайшлося-а-дані-бралися-незрозуміло-звідки-тому-через-брак-часу-і-небажання-шукати-стовідсотково-підходящий-варіант-ця-ідея-була-відкинута"><span class="header-section-number">2.1</span> Перщопочатково ідея була взагалі інша - я хотів з сайту FRED взяти датасет по країнам і дослідити інфлаяцію за той рік, однак проблема буловтому, що підходящого датасету там не знайшлося, а дані бралися незрозуміло звідки, тому через брак часу і небажання шукати стовідсотково підходящий варіант, ця ідея була відкинута</h2>
+</section>
+<section id="по-самій-роботі-з-аpi-сервісами-не-до-кінця-все-було-зрозумілоособливо-з-нетиповими-випадками-в-яких-розібратися-було-іноді-складно.-тут-на-щастя-не-потребувався-арі-ключ-але-була-така-можливість-однак-з-умовою-оплати-за-використання-даних." class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="по-самій-роботі-з-аpi-сервісами-не-до-кінця-все-було-зрозумілоособливо-з-нетиповими-випадками-в-яких-розібратися-було-іноді-складно.-тут-на-щастя-не-потребувався-арі-ключ-але-була-така-можливість-однак-з-умовою-оплати-за-використання-даних."><span class="header-section-number">2.2</span> По самій роботі з АPI сервісами, не до кінця все було зрозуміло,особливо з нетиповими випадками в яких розібратися було іноді складно. Тут, на щастя, не потребувався АРІ ключ, але була така можливість, однак з умовою оплати за використання даних.</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Steam or OpenDota account ID</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>games_id <span class="ot">&lt;-</span> <span class="dv">8502020240</span> <span class="co"># Your game ID </span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>player_id <span class="ot">&lt;-</span> <span class="dv">1515008780</span> <span class="co"># Your player ID </span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>req1 <span class="ot">&lt;-</span> <span class="fu">request</span>(<span class="fu">paste0</span>(<span class="st">"https://api.opendota.com/api/matches/"</span>, games_id))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>req <span class="ot">&lt;-</span> <span class="fu">request</span>(<span class="fu">paste0</span>(<span class="st">"https://api.opendota.com/api/players/"</span>, player_id))</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>resp1 <span class="ot">&lt;-</span> <span class="fu">req_perform</span>(req1)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>resp <span class="ot">&lt;-</span> <span class="fu">req_perform</span>(req)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>game_data <span class="ot">&lt;-</span> <span class="fu">resp_body_json</span>(resp1, <span class="at">simplifyVector =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>player_data <span class="ot">&lt;-</span> <span class="fu">resp_body_json</span>(resp, <span class="at">simplifyVector =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>game_data_df <span class="ot">&lt;-</span> game_data<span class="sc">$</span>players</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>game_data_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["player_slot"],"name":[1],"type":["int"],"align":["right"]},{"label":["team_number"],"name":[2],"type":["int"],"align":["right"]},{"label":["team_slot"],"name":[3],"type":["int"],"align":["right"]},{"label":["hero_id"],"name":[4],"type":["int"],"align":["right"]},{"label":["hero_variant"],"name":[5],"type":["int"],"align":["right"]},{"label":["item_0"],"name":[6],"type":["int"],"align":["right"]},{"label":["item_1"],"name":[7],"type":["int"],"align":["right"]},{"label":["item_2"],"name":[8],"type":["int"],"align":["right"]},{"label":["item_3"],"name":[9],"type":["int"],"align":["right"]},{"label":["item_4"],"name":[10],"type":["int"],"align":["right"]},{"label":["item_5"],"name":[11],"type":["int"],"align":["right"]},{"label":["backpack_0"],"name":[12],"type":["int"],"align":["right"]},{"label":["backpack_1"],"name":[13],"type":["int"],"align":["right"]},{"label":["backpack_2"],"name":[14],"type":["int"],"align":["right"]},{"label":["item_neutral"],"name":[15],"type":["int"],"align":["right"]},{"label":["item_neutral2"],"name":[16],"type":["int"],"align":["right"]},{"label":["kills"],"name":[17],"type":["int"],"align":["right"]},{"label":["deaths"],"name":[18],"type":["int"],"align":["right"]},{"label":["assists"],"name":[19],"type":["int"],"align":["right"]},{"label":["leaver_status"],"name":[20],"type":["int"],"align":["right"]},{"label":["last_hits"],"name":[21],"type":["int"],"align":["right"]},{"label":["denies"],"name":[22],"type":["int"],"align":["right"]},{"label":["gold_per_min"],"name":[23],"type":["int"],"align":["right"]},{"label":["xp_per_min"],"name":[24],"type":["int"],"align":["right"]},{"label":["level"],"name":[25],"type":["int"],"align":["right"]},{"label":["net_worth"],"name":[26],"type":["int"],"align":["right"]},{"label":["aghanims_scepter"],"name":[27],"type":["int"],"align":["right"]},{"label":["aghanims_shard"],"name":[28],"type":["int"],"align":["right"]},{"label":["moonshard"],"name":[29],"type":["int"],"align":["right"]},{"label":["hero_damage"],"name":[30],"type":["int"],"align":["right"]},{"label":["tower_damage"],"name":[31],"type":["int"],"align":["right"]},{"label":["hero_healing"],"name":[32],"type":["int"],"align":["right"]},{"label":["gold"],"name":[33],"type":["int"],"align":["right"]},{"label":["gold_spent"],"name":[34],"type":["int"],"align":["right"]},{"label":["ability_upgrades_arr"],"name":[35],"type":["list"],"align":["right"]},{"label":["is_subscriber"],"name":[36],"type":["lgl"],"align":["right"]},{"label":["radiant_win"],"name":[37],"type":["lgl"],"align":["right"]},{"label":["start_time"],"name":[38],"type":["int"],"align":["right"]},{"label":["duration"],"name":[39],"type":["int"],"align":["right"]},{"label":["cluster"],"name":[40],"type":["int"],"align":["right"]},{"label":["lobby_type"],"name":[41],"type":["int"],"align":["right"]},{"label":["game_mode"],"name":[42],"type":["int"],"align":["right"]},{"label":["is_contributor"],"name":[43],"type":["lgl"],"align":["right"]},{"label":["patch"],"name":[44],"type":["int"],"align":["right"]},{"label":["region"],"name":[45],"type":["int"],"align":["right"]},{"label":["isRadiant"],"name":[46],"type":["lgl"],"align":["right"]},{"label":["win"],"name":[47],"type":["int"],"align":["right"]},{"label":["lose"],"name":[48],"type":["int"],"align":["right"]},{"label":["total_gold"],"name":[49],"type":["int"],"align":["right"]},{"label":["total_xp"],"name":[50],"type":["int"],"align":["right"]},{"label":["kills_per_min"],"name":[51],"type":["dbl"],"align":["right"]},{"label":["kda"],"name":[52],"type":["dbl"],"align":["right"]},{"label":["abandons"],"name":[53],"type":["int"],"align":["right"]},{"label":["benchmarks"],"name":[54],"type":["df[,7]"],"align":["right"]},{"label":["account_id"],"name":[55],"type":["int"],"align":["right"]},{"label":["personaname"],"name":[56],"type":["chr"],"align":["left"]},{"label":["name"],"name":[57],"type":["lgl"],"align":["right"]},{"label":["last_login"],"name":[58],"type":["chr"],"align":["left"]},{"label":["rank_tier"],"name":[59],"type":["int"],"align":["right"]}],"data":[{"1":"0","2":"0","3":"0","4":"53","5":"1","6":"267","7":"116","8":"65","9":"29","10":"149","11":"250","12":"0","13":"0","14":"0","15":"1643","16":"1585","17":"6","18":"15","19":"22","20":"0","21":"277","22":"0","23":"525","24":"626","25":"24","26":"24319","27":"1","28":"0","29":"0","30":"29322","31":"2767","32":"1840","33":"259","34":"27095","35":"<int [18]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"TRUE","47":"0","48":"1","49":"27938","50":"33313","51":"0.11274663","52":"1.75","53":"0","54":"<df[,7] [10 × 7]>","55":"NA","56":"NA","57":"NA","58":"NA","59":"NA","_rn_":"1"},{"1":"1","2":"0","3":"1","4":"76","5":"1","6":"63","7":"96","8":"263","9":"108","10":"65","11":"534","12":"0","13":"0","14":"0","15":"1607","16":"1577","17":"14","18":"16","19":"13","20":"0","21":"284","22":"4","23":"576","24":"913","25":"27","26":"24185","27":"0","28":"1","29":"0","30":"57406","31":"2684","32":"0","33":"2460","34":"23360","35":"<int [20]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"TRUE","47":"0","48":"1","49":"30652","50":"48586","51":"0.26307548","52":"1.59","53":"0","54":"<df[,7] [10 × 7]>","55":"89698632","56":"Bruno","57":"NA","58":"NA","59":"54","_rn_":"2"},{"1":"2","2":"0","3":"2","4":"42","5":"1","6":"112","7":"0","8":"127","9":"1","10":"137","11":"63","12":"0","13":"0","14":"0","15":"1603","16":"1594","17":"15","18":"11","19":"19","20":"0","21":"364","22":"4","23":"611","24":"925","25":"27","26":"24045","27":"1","28":"1","29":"0","30":"72549","31":"4684","32":"0","33":"1070","34":"24825","35":"<int [20]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"TRUE","47":"0","48":"1","49":"32515","50":"49225","51":"0.28186658","52":"2.83","53":"0","54":"<df[,7] [10 × 7]>","55":"103184736","56":"MuFaSa","57":"NA","58":"NA","59":"51","_rn_":"3"},{"1":"3","2":"0","3":"3","4":"1","5":"2","6":"208","7":"63","8":"145","9":"147","10":"52","11":"75","12":"22","13":"19","14":"0","15":"1643","16":"1586","17":"4","18":"11","19":"14","20":"0","21":"362","22":"9","23":"479","24":"762","25":"26","26":"21165","27":"0","28":"0","29":"0","30":"24008","31":"85","32":"0","33":"210","34":"21385","35":"<int [19]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"TRUE","47":"0","48":"1","49":"25490","50":"40551","51":"0.07516442","52":"1.50","53":"0","54":"<df[,7] [10 × 7]>","55":"NA","56":"NA","57":"NA","58":"NA","59":"NA","_rn_":"4"},{"1":"4","2":"0","3":"4","4":"79","5":"1","6":"254","7":"180","8":"40","9":"40","10":"108","11":"37","12":"0","13":"0","14":"0","15":"1607","16":"1583","17":"3","18":"11","19":"26","20":"0","21":"52","22":"3","23":"276","24":"550","25":"23","26":"11361","27":"0","28":"1","29":"0","30":"25237","31":"1458","32":"2279","33":"551","34":"12110","35":"<int [18]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"TRUE","47":"0","48":"1","49":"14687","50":"29269","51":"0.05637332","52":"2.42","53":"0","54":"<df[,7] [10 × 7]>","55":"NA","56":"NA","57":"NA","58":"NA","59":"NA","_rn_":"5"},{"1":"128","2":"1","3":"0","4":"74","5":"3","6":"48","7":"1","8":"96","9":"110","10":"108","11":"534","12":"0","13":"0","14":"0","15":"1642","16":"1592","17":"14","18":"13","19":"18","20":"0","21":"172","22":"4","23":"508","24":"887","25":"27","26":"25049","27":"0","28":"1","29":"0","30":"49111","31":"5223","32":"0","33":"1724","34":"26225","35":"<int [25]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"FALSE","47":"1","48":"0","49":"27034","50":"47203","51":"0.26307548","52":"2.29","53":"0","54":"<df[,7] [10 × 7]>","55":"NA","56":"NA","57":"NA","58":"NA","59":"NA","_rn_":"6"},{"1":"129","2":"1","3":"1","4":"70","5":"2","6":"145","7":"603","8":"208","9":"135","10":"235","11":"156","12":"0","13":"0","14":"0","15":"1643","16":"1597","17":"27","18":"5","19":"13","20":"0","21":"688","22":"8","23":"921","24":"1391","25":"30","26":"45731","27":"1","28":"1","29":"0","30":"88873","31":"12963","32":"0","33":"6831","34":"43595","35":"<int [23]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"FALSE","47":"1","48":"0","49":"49012","50":"74024","51":"0.50735985","52":"6.67","53":"0","54":"<df[,7] [10 × 7]>","55":"NA","56":"NA","57":"NA","58":"NA","59":"NA","_rn_":"7"},{"1":"130","2":"1","3":"2","4":"129","5":"1","6":"1","7":"116","8":"50","9":"242","10":"178","11":"110","12":"0","13":"0","14":"0","15":"1641","16":"1597","17":"3","18":"6","19":"30","20":"0","21":"300","22":"13","23":"499","24":"946","25":"28","26":"24764","27":"0","28":"1","29":"0","30":"31088","31":"3804","32":"1354","33":"4034","34":"22310","35":"<int [21]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"FALSE","47":"1","48":"0","49":"26555","50":"50342","51":"0.05637332","52":"4.71","53":"0","54":"<df[,7] [10 × 7]>","55":"1515008780","56":"ДМИТРИЙ  УТКИН","57":"NA","58":"2025-10-15T11:14:52.275Z","59":"51","_rn_":"8"},{"1":"131","2":"1","3":"3","4":"59","5":"4","6":"151","7":"116","8":"156","9":"21","10":"48","11":"600","12":"0","13":"0","14":"0","15":"1605","16":"1594","17":"17","18":"12","19":"15","20":"0","21":"310","22":"39","23":"631","24":"943","25":"28","26":"30007","27":"1","28":"1","29":"0","30":"56608","31":"6346","32":"0","33":"807","34":"30710","35":"<int [21]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"FALSE","47":"1","48":"0","49":"33579","50":"50183","51":"0.31944879","52":"2.46","53":"0","54":"<df[,7] [10 × 7]>","55":"115015376","56":"SEIJURO AKASHI","57":"NA","58":"NA","59":"44","_rn_":"9"},{"1":"132","2":"1","3":"4","4":"50","5":"2","6":"102","7":"180","8":"176","9":"218","10":"100","11":"254","12":"44","13":"94","14":"0","15":"675","16":"1583","17":"3","18":"9","19":"22","20":"0","21":"177","22":"6","23":"398","24":"887","25":"27","26":"19019","27":"0","28":"0","29":"0","30":"12270","31":"1005","32":"7224","33":"1414","34":"21020","35":"<int [20]>","36":"FALSE","37":"FALSE","38":"1759955184","39":"3193","40":"182","41":"7","42":"22","43":"FALSE","44":"58","45":"8","46":"FALSE","47":"1","48":"0","49":"21180","50":"47203","51":"0.05637332","52":"2.50","53":"0","54":"<df[,7] [10 × 7]>","55":"73295332","56":"f0xy","57":"NA","58":"NA","59":"51","_rn_":"10"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>game_data_df[<span class="fu">sapply</span>(game_data_df, is.null)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="тут-ми-можемо-спостерігати-перший-результат-аналізу-нових-даних-я-для-цікавості-вирішив-взяти-на-обробку-одну-з-своїх-недавніх-ігор-однак-не-все-на-графіку-буде-зрозуміло---пізніше-поясню-чому." class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="тут-ми-можемо-спостерігати-перший-результат-аналізу-нових-даних-я-для-цікавості-вирішив-взяти-на-обробку-одну-з-своїх-недавніх-ігор-однак-не-все-на-графіку-буде-зрозуміло---пізніше-поясню-чому."><span class="header-section-number">2.3</span> Тут ми можемо спостерігати перший результат аналізу нових даних, я для цікавості вирішив взяти на обробку одну з своїх недавніх ігор, однак не все на графіку буде зрозуміло - пізніше поясню чому.</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Work_with_api_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="і-інший-графік---розрахунок-коефіціенту-користності-за-одну-гру." class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="і-інший-графік---розрахунок-коефіціенту-користності-за-одну-гру."><span class="header-section-number">2.4</span> І інший графік - розрахунок коефіціенту <strong>користності</strong> за одну гру.</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Work_with_api_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="настав-час-пояснень-того-що-це-за-циферки-і-де-букви.-cправа-в-тому-що-на-даний-момент-існує-2-варіанти-того-як-можна-доповнити-дані---використовуючи-датасети-які-вже-є-опубліковані-однак-не-оновлені-за-довгий-час-через-що-зустрічаються-такі-артефакти-як-виведення-предмету-який-найчастіше-купили-в-грі---а-виявляється-що-предмет-з-таким-айді-давно-не-існує-і-його-замінив-інший-предмет.-і-таких-випадків-безліч-тому-єдиний-правильний-варіант-розвитку-подій-на-даний-момент-це-власноруч-прописата-всім-героям-відповідні-айді-характеристики-скіли-пасивні-навички-і-все-теж-саме-для-предметів-що-зрозуміло-займе-час." class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="настав-час-пояснень-того-що-це-за-циферки-і-де-букви.-cправа-в-тому-що-на-даний-момент-існує-2-варіанти-того-як-можна-доповнити-дані---використовуючи-датасети-які-вже-є-опубліковані-однак-не-оновлені-за-довгий-час-через-що-зустрічаються-такі-артефакти-як-виведення-предмету-який-найчастіше-купили-в-грі---а-виявляється-що-предмет-з-таким-айді-давно-не-існує-і-його-замінив-інший-предмет.-і-таких-випадків-безліч-тому-єдиний-правильний-варіант-розвитку-подій-на-даний-момент-це-власноруч-прописата-всім-героям-відповідні-айді-характеристики-скіли-пасивні-навички-і-все-теж-саме-для-предметів-що-зрозуміло-займе-час."><span class="header-section-number">2.5</span> Настав час пояснень того що це за циферки і де букви. Cправа в тому що на даний момент існує 2 варіанти того як можна доповнити дані - використовуючи датасети які вже є опубліковані, однак не оновлені за довгий час, через що зустрічаються такі артефакти як виведення предмету який найчастіше купили в грі - а виявляється що предмет з таким айді давно не існує і його замінив інший предмет. І таких випадків безліч, тому <strong>єдиний правильний</strong> варіант розвитку подій на даний момент, це власноруч прописата всім героям відповідні айді, характеристики, скіли, пасивні навички, і все теж саме для предметів, що зрозуміло, займе час.</h2>
+<!-- -->
+
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="sourceCode" id="cb13" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Exploring Data: From Web Scraping to OpenDota API"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Mykola Utkin"</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="an">number-sections:</span><span class="co"> true</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">    # toc: true</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">    # toc-depth: 2</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">    # toc-title: "Зміст"</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">    # toc-location: right</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">    # idea from https://quarto.org/docs/output-formats/html-code.html</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co">    number-sections: true</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: true</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co">    df-print: paged</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co">    highlight-style: atom-one-light</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="an">editor_options:</span><span class="co"> </span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="co">  chunk_output_type: console</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="fu"># Про що ця робота:</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>Коротко - тут я випробовував різні штуки з бібліотек **httr2** і **rvest** </span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>**Частина №1** - соціальне дослідження того в які країни краще їхати працювати психологом і бопомагати людям з суіцидальними поривами</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>**Частина №2** - дослідження того, які дані я зможу отримати про гру яку нещодавно сам же і зіграв через ресурс перегляду статистики матчів за допомогою API.</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a><span class="co">#| include: FALSE</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="fu">.libPaths</span>(<span class="fu">c</span>(<span class="fu">file.path</span>(<span class="st">"D:"</span>, <span class="st">"R-4.5.1"</span>, <span class="st">"library"</span>), <span class="fu">.libPaths</span>()))</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pacman)</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  tidyverse,</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  rvest,</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>  janitor,</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>  ggrepel,</span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>  jsonlite,</span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>  httr2,  </span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>  dplyr</span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a><span class="fu">## Бермо свою першу табличку з вікіпедії про коефіціент самогубств на 100 тис. населення і нормуємо її прибираючи перший ряд некоректних заголовків.</span></span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">"https://en.wikipedia.org/wiki/List_of_countries_by_suicide_rate"</span></span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>page1 <span class="ot">&lt;-</span> <span class="fu">read_html</span>(url)</span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a>suicide_list <span class="ot">&lt;-</span> page1 <span class="sc">|&gt;</span></span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_elements</span>(<span class="st">"table.wikitable"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_table</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>suicide_df <span class="ot">&lt;-</span> suicide_list[[<span class="dv">1</span>]]</span>
+<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a>suicide_df <span class="ot">&lt;-</span> suicide_df[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(suicide_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Location"</span>, <span class="st">"Region"</span>, <span class="st">"All"</span>, <span class="st">"Male"</span>, <span class="st">"Female"</span>, <span class="st">"M/F"</span>)</span>
+<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-64"><a href="#cb13-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-65"><a href="#cb13-65" aria-hidden="true" tabindex="-1"></a><span class="fu">## Нижче будуть виведені шматки коду які я перепробував і приходив до dead-end-у кожен раз. Тому те що ви бачите зараз - результат **багатьох** спроб. </span></span>
+<span id="cb13-66"><a href="#cb13-66" aria-hidden="true" tabindex="-1"></a>**ЛЮДЯМ З ВЕЛИКИМ СТАЖЕМ І/АБО СЛАБКИМИ НЕРВАМИ НЕ ДИВИТИСЯ**</span>
+<span id="cb13-67"><a href="#cb13-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-70"><a href="#cb13-70" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-71"><a href="#cb13-71" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: FALSE</span></span>
+<span id="cb13-72"><a href="#cb13-72" aria-hidden="true" tabindex="-1"></a><span class="co"># url &lt;- "https://uk.wikipedia.org/wiki/%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA_%D0%BA%D1%80%D0%B0%D1%97%D0%BD_%D0%B7%D0%B0_%D0%BD%D0%B0%D1%81%D0%B5%D0%BB%D0%B5%D0%BD%D0%BD%D1%8F%D0%BC"</span></span>
+<span id="cb13-73"><a href="#cb13-73" aria-hidden="true" tabindex="-1"></a><span class="co"># m100 &lt;- read_html(url)</span></span>
+<span id="cb13-74"><a href="#cb13-74" aria-hidden="true" tabindex="-1"></a><span class="co"># tables &lt;- m100 |&gt; html_elements("table")</span></span>
+<span id="cb13-75"><a href="#cb13-75" aria-hidden="true" tabindex="-1"></a><span class="co"># length(tables)  # to see how many tables exist</span></span>
+<span id="cb13-76"><a href="#cb13-76" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf &lt;- tables[[3]]</span></span>
+<span id="cb13-77"><a href="#cb13-77" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df &lt;- pre_iaaf |&gt; html_table(fill = TRUE)</span></span>
+<span id="cb13-78"><a href="#cb13-78" aria-hidden="true" tabindex="-1"></a><span class="co"># head(pre_iaaf_df)</span></span>
+<span id="cb13-79"><a href="#cb13-79" aria-hidden="true" tabindex="-1"></a><span class="co"># # тут вономені виводить непотрібні 2 рядки спочатку, і я їх хочу позбавитися через непотрібність і </span></span>
+<span id="cb13-80"><a href="#cb13-80" aria-hidden="true" tabindex="-1"></a><span class="co"># # через те що вони псують заголовки моїх стовбців</span></span>
+<span id="cb13-81"><a href="#cb13-81" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb13-82"><a href="#cb13-82" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- pre_iaaf_df[-c(1,2), ]</span></span>
+<span id="cb13-83"><a href="#cb13-83" aria-hidden="true" tabindex="-1"></a><span class="co"># names(pre_iaaf_df_clean) &lt;- c(</span></span>
+<span id="cb13-84"><a href="#cb13-84" aria-hidden="true" tabindex="-1"></a><span class="co">#   "Місце", "Країна", "2006", "2009", "2012", "2015", "2021", "Щільність"</span></span>
+<span id="cb13-85"><a href="#cb13-85" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
+<span id="cb13-86"><a href="#cb13-86" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- pre_iaaf_df_clean |&gt;</span></span>
+<span id="cb13-87"><a href="#cb13-87" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(across(</span></span>
+<span id="cb13-88"><a href="#cb13-88" aria-hidden="true" tabindex="-1"></a><span class="co">#     c("2006", "2009", "2012", "2015", "2021", "Щільність"),</span></span>
+<span id="cb13-89"><a href="#cb13-89" aria-hidden="true" tabindex="-1"></a><span class="co">#     ~str_replace_all(., "[^0-9]", "") |&gt; as.numeric()</span></span>
+<span id="cb13-90"><a href="#cb13-90" aria-hidden="true" tabindex="-1"></a><span class="co">#   ))</span></span>
+<span id="cb13-91"><a href="#cb13-91" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df$`2006`[1:10]</span></span>
+<span id="cb13-92"><a href="#cb13-92" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- pre_iaaf_df_clean |&gt;</span></span>
+<span id="cb13-93"><a href="#cb13-93" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(across(</span></span>
+<span id="cb13-94"><a href="#cb13-94" aria-hidden="true" tabindex="-1"></a><span class="co">#     c("2006", "2009", "2012", "2015", "2021", "Щільність"),</span></span>
+<span id="cb13-95"><a href="#cb13-95" aria-hidden="true" tabindex="-1"></a><span class="co">#     ~ . |&gt;</span></span>
+<span id="cb13-96"><a href="#cb13-96" aria-hidden="true" tabindex="-1"></a><span class="co">#       str_replace_all("[[:space:]]", "") |&gt;</span></span>
+<span id="cb13-97"><a href="#cb13-97" aria-hidden="true" tabindex="-1"></a><span class="co">#       str_replace_all("[^0-9]", "") |&gt; </span></span>
+<span id="cb13-98"><a href="#cb13-98" aria-hidden="true" tabindex="-1"></a><span class="co">#       na_if("") |&gt; </span></span>
+<span id="cb13-99"><a href="#cb13-99" aria-hidden="true" tabindex="-1"></a><span class="co">#       as.numeric()</span></span>
+<span id="cb13-100"><a href="#cb13-100" aria-hidden="true" tabindex="-1"></a><span class="co">#   ))</span></span>
+<span id="cb13-101"><a href="#cb13-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-102"><a href="#cb13-102" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb13-103"><a href="#cb13-103" aria-hidden="true" tabindex="-1"></a><span class="co"># length(pre_iaf)</span></span>
+<span id="cb13-104"><a href="#cb13-104" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean</span></span>
+<span id="cb13-105"><a href="#cb13-105" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb13-106"><a href="#cb13-106" aria-hidden="true" tabindex="-1"></a><span class="co"># clean_numeric_columns &lt;- function(df) {</span></span>
+<span id="cb13-107"><a href="#cb13-107" aria-hidden="true" tabindex="-1"></a><span class="co">#   df |&gt; </span></span>
+<span id="cb13-108"><a href="#cb13-108" aria-hidden="true" tabindex="-1"></a><span class="co">#     mutate(across(</span></span>
+<span id="cb13-109"><a href="#cb13-109" aria-hidden="true" tabindex="-1"></a><span class="co">#       -c(Країна),</span></span>
+<span id="cb13-110"><a href="#cb13-110" aria-hidden="true" tabindex="-1"></a><span class="co">#       ~ .x |&gt;</span></span>
+<span id="cb13-111"><a href="#cb13-111" aria-hidden="true" tabindex="-1"></a><span class="co">#         str_replace_all("[^0-9]", "") |&gt;  # все, крім цифр</span></span>
+<span id="cb13-112"><a href="#cb13-112" aria-hidden="true" tabindex="-1"></a><span class="co">#         as.ineger()                      # в число</span></span>
+<span id="cb13-113"><a href="#cb13-113" aria-hidden="true" tabindex="-1"></a><span class="co">#     ))</span></span>
+<span id="cb13-114"><a href="#cb13-114" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span>
+<span id="cb13-115"><a href="#cb13-115" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean &lt;- clean_numeric_columns(pre_iaaf_df_clean)</span></span>
+<span id="cb13-116"><a href="#cb13-116" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaaf_df_clean</span></span>
+<span id="cb13-117"><a href="#cb13-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-118"><a href="#cb13-118" aria-hidden="true" tabindex="-1"></a><span class="co"># Одна з робочих версій, однак мав відкинути її черз приколизтим що в результаті воно виводило ліст()</span></span>
+<span id="cb13-119"><a href="#cb13-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-120"><a href="#cb13-120" aria-hidden="true" tabindex="-1"></a><span class="co"># url &lt;- "https://en.wikipedia.org/wiki/List_of_countries_by_suicide_rate"</span></span>
+<span id="cb13-121"><a href="#cb13-121" aria-hidden="true" tabindex="-1"></a><span class="co"># m100 &lt;- read_html(url)</span></span>
+<span id="cb13-122"><a href="#cb13-122" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaf &lt;- m100 |&gt; </span></span>
+<span id="cb13-123"><a href="#cb13-123" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_elements(".wikitable sortable static-row-numbers sticky-header-multi sort-under-center col1left jquery-tablesorter") |&gt; </span></span>
+<span id="cb13-124"><a href="#cb13-124" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_elements("tbody") |&gt; </span></span>
+<span id="cb13-125"><a href="#cb13-125" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_table()</span></span>
+<span id="cb13-126"><a href="#cb13-126" aria-hidden="true" tabindex="-1"></a><span class="co"># pre_iaf</span></span>
+<span id="cb13-127"><a href="#cb13-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-128"><a href="#cb13-128" aria-hidden="true" tabindex="-1"></a><span class="co"># url &lt;- "https://en.wikipedia.org/wiki/List_of_countries_by_suicide_rate"</span></span>
+<span id="cb13-129"><a href="#cb13-129" aria-hidden="true" tabindex="-1"></a><span class="co"># page1 &lt;- read_html(url)</span></span>
+<span id="cb13-130"><a href="#cb13-130" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb13-131"><a href="#cb13-131" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df &lt;- page1 |&gt;</span></span>
+<span id="cb13-132"><a href="#cb13-132" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_elements("table.wikitable") |&gt;</span></span>
+<span id="cb13-133"><a href="#cb13-133" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_children() |&gt;</span></span>
+<span id="cb13-134"><a href="#cb13-134" aria-hidden="true" tabindex="-1"></a><span class="co">#   html_table(fill = TRUE)</span></span>
+<span id="cb13-135"><a href="#cb13-135" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df</span></span>
+<span id="cb13-136"><a href="#cb13-136" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df &lt;- suicide_df[2]</span></span>
+<span id="cb13-137"><a href="#cb13-137" aria-hidden="true" tabindex="-1"></a><span class="co"># length(suicide_df)</span></span>
+<span id="cb13-138"><a href="#cb13-138" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df &lt;- suicide_df[0:1]</span></span>
+<span id="cb13-139"><a href="#cb13-139" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df</span></span>
+<span id="cb13-140"><a href="#cb13-140" aria-hidden="true" tabindex="-1"></a><span class="co"># # suicide_df &lt;- suicide_df[1:length(suicide_df)]</span></span>
+<span id="cb13-141"><a href="#cb13-141" aria-hidden="true" tabindex="-1"></a><span class="co"># # suicide_df</span></span>
+<span id="cb13-142"><a href="#cb13-142" aria-hidden="true" tabindex="-1"></a><span class="co"># colnames(suicide_df[[1]]) &lt;- c("Location", "Region", "All", "Male", "Female", "M/F")</span></span>
+<span id="cb13-143"><a href="#cb13-143" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_df</span></span>
+<span id="cb13-144"><a href="#cb13-144" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_clean &lt;- suicide_df |&gt;</span></span>
+<span id="cb13-145"><a href="#cb13-145" aria-hidden="true" tabindex="-1"></a><span class="co">#   clean_names() |&gt;</span></span>
+<span id="cb13-146"><a href="#cb13-146" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(across(</span></span>
+<span id="cb13-147"><a href="#cb13-147" aria-hidden="true" tabindex="-1"></a><span class="co">#     c(all, male, female, mf),</span></span>
+<span id="cb13-148"><a href="#cb13-148" aria-hidden="true" tabindex="-1"></a><span class="co">#     ~ str_replace_all(., "[^0-9.]", "") |&gt; na_if("") |&gt; as.numeric()</span></span>
+<span id="cb13-149"><a href="#cb13-149" aria-hidden="true" tabindex="-1"></a><span class="co">#   )) |&gt;</span></span>
+<span id="cb13-150"><a href="#cb13-150" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(!is.na(country) &amp; country != "" &amp; !country %in% c("World", "—"))</span></span>
+<span id="cb13-151"><a href="#cb13-151" aria-hidden="true" tabindex="-1"></a><span class="co"># suicide_clean</span></span>
+<span id="cb13-152"><a href="#cb13-152" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-153"><a href="#cb13-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-156"><a href="#cb13-156" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-157"><a href="#cb13-157" aria-hidden="true" tabindex="-1"></a><span class="co">#| include: FALSE</span></span>
+<span id="cb13-158"><a href="#cb13-158" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">"https://en.wikipedia.org/wiki/List_of_countries_by_suicide_rate"</span></span>
+<span id="cb13-159"><a href="#cb13-159" aria-hidden="true" tabindex="-1"></a>page1 <span class="ot">&lt;-</span> <span class="fu">read_html</span>(url)</span>
+<span id="cb13-160"><a href="#cb13-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-161"><a href="#cb13-161" aria-hidden="true" tabindex="-1"></a>suicide_list <span class="ot">&lt;-</span> page1 <span class="sc">|&gt;</span></span>
+<span id="cb13-162"><a href="#cb13-162" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_elements</span>(<span class="st">"table.wikitable"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-163"><a href="#cb13-163" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_table</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-164"><a href="#cb13-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-165"><a href="#cb13-165" aria-hidden="true" tabindex="-1"></a>suicide_df <span class="ot">&lt;-</span> suicide_list[[<span class="dv">1</span>]]</span>
+<span id="cb13-166"><a href="#cb13-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-167"><a href="#cb13-167" aria-hidden="true" tabindex="-1"></a>suicide_df <span class="ot">&lt;-</span> suicide_df[<span class="sc">-</span><span class="dv">1</span>, ]</span>
+<span id="cb13-168"><a href="#cb13-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-169"><a href="#cb13-169" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(suicide_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Location"</span>, <span class="st">"Region"</span>, <span class="st">"All"</span>, <span class="st">"Male"</span>, <span class="st">"Female"</span>, <span class="st">"M/F"</span>)</span>
+<span id="cb13-170"><a href="#cb13-170" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-171"><a href="#cb13-171" aria-hidden="true" tabindex="-1"></a>suicide_clean <span class="ot">&lt;-</span> suicide_df <span class="sc">|&gt;</span></span>
+<span id="cb13-172"><a href="#cb13-172" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(</span>
+<span id="cb13-173"><a href="#cb13-173" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(All, Male, Female, <span class="st">`</span><span class="at">M/F</span><span class="st">`</span>),</span>
+<span id="cb13-174"><a href="#cb13-174" aria-hidden="true" tabindex="-1"></a>    <span class="sc">~</span> <span class="fu">str_replace_all</span>(., <span class="st">"[^0-9.]"</span>, <span class="st">""</span>) <span class="sc">|&gt;</span> <span class="fu">na_if</span>(<span class="st">""</span>) <span class="sc">|&gt;</span> <span class="fu">as.numeric</span>()</span>
+<span id="cb13-175"><a href="#cb13-175" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">|&gt;</span></span>
+<span id="cb13-176"><a href="#cb13-176" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Location <span class="sc">!=</span> <span class="st">"World"</span>, <span class="sc">!</span><span class="fu">is.na</span>(All))</span>
+<span id="cb13-177"><a href="#cb13-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-178"><a href="#cb13-178" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(suicide_clean)</span>
+<span id="cb13-179"><a href="#cb13-179" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-180"><a href="#cb13-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-181"><a href="#cb13-181" aria-hidden="true" tabindex="-1"></a><span class="fu">## Проміжна таблиця яка презентує нам країни з найбільшою кількістю самогубств на 100 тис. населення</span></span>
+<span id="cb13-182"><a href="#cb13-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-185"><a href="#cb13-185" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-186"><a href="#cb13-186" aria-hidden="true" tabindex="-1"></a>suicide_clean <span class="sc">|&gt;</span></span>
+<span id="cb13-187"><a href="#cb13-187" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(All, <span class="at">n =</span> <span class="dv">15</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-188"><a href="#cb13-188" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(Location, All), <span class="at">y =</span> All, <span class="at">fill =</span> Region)) <span class="sc">+</span></span>
+<span id="cb13-189"><a href="#cb13-189" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb13-190"><a href="#cb13-190" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb13-191"><a href="#cb13-191" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb13-192"><a href="#cb13-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Top 15 Countries by Suicide Mortality Rate (WHO, 2021)"</span>,</span>
+<span id="cb13-193"><a href="#cb13-193" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Suicides per 100K population"</span>,</span>
+<span id="cb13-194"><a href="#cb13-194" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="cn">NULL</span></span>
+<span id="cb13-195"><a href="#cb13-195" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb13-196"><a href="#cb13-196" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb13-197"><a href="#cb13-197" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb13-198"><a href="#cb13-198" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb13-199"><a href="#cb13-199" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>)</span>
+<span id="cb13-200"><a href="#cb13-200" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb13-201"><a href="#cb13-201" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-202"><a href="#cb13-202" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-203"><a href="#cb13-203" aria-hidden="true" tabindex="-1"></a><span class="fu">## Етап №2 - беремо до уваги не лише значення на 100 тис. осіб, але і фактичне значення людей, адже великий відсоток самогубств в малій країні -&gt; менше клієнтів, аніж якби їх було багато з такою ж самою щільністю </span></span>
+<span id="cb13-204"><a href="#cb13-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-207"><a href="#cb13-207" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-208"><a href="#cb13-208" aria-hidden="true" tabindex="-1"></a>url <span class="ot">&lt;-</span> <span class="st">"https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population"</span></span>
+<span id="cb13-209"><a href="#cb13-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-210"><a href="#cb13-210" aria-hidden="true" tabindex="-1"></a>page2 <span class="ot">&lt;-</span> <span class="fu">read_html</span>(url)</span>
+<span id="cb13-211"><a href="#cb13-211" aria-hidden="true" tabindex="-1"></a>page2</span>
+<span id="cb13-212"><a href="#cb13-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-213"><a href="#cb13-213" aria-hidden="true" tabindex="-1"></a>dell <span class="ot">&lt;-</span> page2 <span class="sc">|&gt;</span> </span>
+<span id="cb13-214"><a href="#cb13-214" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_elements</span>(<span class="st">"table.wikitable"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb13-215"><a href="#cb13-215" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_children</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb13-216"><a href="#cb13-216" aria-hidden="true" tabindex="-1"></a>  <span class="fu">html_table</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-217"><a href="#cb13-217" aria-hidden="true" tabindex="-1"></a>dell <span class="ot">&lt;-</span> dell[[<span class="dv">2</span>]]</span>
+<span id="cb13-218"><a href="#cb13-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-219"><a href="#cb13-219" aria-hidden="true" tabindex="-1"></a>dell <span class="ot">&lt;-</span> dell <span class="sc">|&gt;</span> </span>
+<span id="cb13-220"><a href="#cb13-220" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="st">"% ofworld"</span>, <span class="sc">-</span><span class="st">"Date"</span>, <span class="sc">-</span><span class="st">"Source (official or fromthe United Nations)"</span>, <span class="sc">-</span><span class="st">"Notes"</span>)</span>
+<span id="cb13-221"><a href="#cb13-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-222"><a href="#cb13-222" aria-hidden="true" tabindex="-1"></a>dell <span class="sc">|&gt;</span> <span class="fu">head</span>()</span>
+<span id="cb13-223"><a href="#cb13-223" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-224"><a href="#cb13-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-225"><a href="#cb13-225" aria-hidden="true" tabindex="-1"></a><span class="fu">## Після того як ми почистили наш датасет від непотрібних колонок ми можемо об'єднити наші таблички в одну і вже за простою формулою порахувати **реальну** кількість випадків.</span></span>
+<span id="cb13-226"><a href="#cb13-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-229"><a href="#cb13-229" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-230"><a href="#cb13-230" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">=</span> <span class="fu">merge</span>(dell, suicide_clean,<span class="at">by=</span><span class="st">"Location"</span>,<span class="at">all=</span><span class="cn">TRUE</span>)</span>
+<span id="cb13-231"><a href="#cb13-231" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span> janitor<span class="sc">::</span><span class="fu">clean_names</span>()</span>
+<span id="cb13-232"><a href="#cb13-232" aria-hidden="true" tabindex="-1"></a><span class="co"># data_inner &lt;- data_inner |&gt;</span></span>
+<span id="cb13-233"><a href="#cb13-233" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(location = reorder(location, all))</span></span>
+<span id="cb13-234"><a href="#cb13-234" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb13-235"><a href="#cb13-235" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb13-236"><a href="#cb13-236" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(<span class="fu">c</span>(all, male, female, m_f), <span class="sc">~</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">","</span>, <span class="st">""</span>, .x))),</span>
+<span id="cb13-237"><a href="#cb13-237" aria-hidden="true" tabindex="-1"></a>    <span class="at">location =</span> <span class="fu">reorder</span>(location, <span class="sc">-</span>all, <span class="at">FUN =</span> <span class="cf">function</span>(x) <span class="fu">ifelse</span>(<span class="fu">is.na</span>(x), <span class="dv">0</span>, x))</span>
+<span id="cb13-238"><a href="#cb13-238" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb13-239"><a href="#cb13-239" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(data_inner<span class="sc">$</span>location)[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>]</span>
+<span id="cb13-240"><a href="#cb13-240" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb13-241"><a href="#cb13-241" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb13-242"><a href="#cb13-242" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(<span class="fu">c</span>(all, male, female, m_f), <span class="sc">~</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">","</span>, <span class="st">""</span>, .x)))</span>
+<span id="cb13-243"><a href="#cb13-243" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb13-244"><a href="#cb13-244" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(all)) <span class="sc">|&gt;</span></span>
+<span id="cb13-245"><a href="#cb13-245" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">location =</span> <span class="fu">factor</span>(location, <span class="at">levels =</span> <span class="fu">unique</span>(location)))</span>
+<span id="cb13-246"><a href="#cb13-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-247"><a href="#cb13-247" aria-hidden="true" tabindex="-1"></a>data_inner</span>
+<span id="cb13-248"><a href="#cb13-248" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-249"><a href="#cb13-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-250"><a href="#cb13-250" aria-hidden="true" tabindex="-1"></a><span class="fu">## Простенькою формулою я обчислюю реальну кількість випадків і збираю в зручному форматі.</span></span>
+<span id="cb13-251"><a href="#cb13-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-254"><a href="#cb13-254" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-255"><a href="#cb13-255" aria-hidden="true" tabindex="-1"></a>data_inner <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb13-256"><a href="#cb13-256" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb13-257"><a href="#cb13-257" aria-hidden="true" tabindex="-1"></a>    <span class="at">population =</span> <span class="fu">as.numeric</span>(<span class="fu">gsub</span>(<span class="st">","</span>, <span class="st">""</span>, population)),</span>
+<span id="cb13-258"><a href="#cb13-258" aria-hidden="true" tabindex="-1"></a>    <span class="at">all =</span> <span class="fu">as.numeric</span>(all),</span>
+<span id="cb13-259"><a href="#cb13-259" aria-hidden="true" tabindex="-1"></a>    <span class="at">est_deaths =</span> (all <span class="sc">/</span> <span class="dv">100000</span>) <span class="sc">*</span> population</span>
+<span id="cb13-260"><a href="#cb13-260" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb13-261"><a href="#cb13-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-262"><a href="#cb13-262" aria-hidden="true" tabindex="-1"></a>top15_deaths <span class="ot">&lt;-</span> data_inner <span class="sc">|&gt;</span></span>
+<span id="cb13-263"><a href="#cb13-263" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(est_deaths)) <span class="sc">|&gt;</span></span>
+<span id="cb13-264"><a href="#cb13-264" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(est_deaths)) <span class="sc">|&gt;</span></span>
+<span id="cb13-265"><a href="#cb13-265" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">15</span>)</span>
+<span id="cb13-266"><a href="#cb13-266" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-267"><a href="#cb13-267" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-268"><a href="#cb13-268" aria-hidden="true" tabindex="-1"></a><span class="fu">## Ну і отримуємо нашу візуалізацію того, куди краще їхати на роботу і яку мову вчити, також важливо робити поправки на реалістичність ситуації, те що вони чудово корелюють на графіку ще не означає що це єдиний фактор впливу на такі випадки.</span></span>
+<span id="cb13-269"><a href="#cb13-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-272"><a href="#cb13-272" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-273"><a href="#cb13-273" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: FALSE</span></span>
+<span id="cb13-274"><a href="#cb13-274" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(top15_deaths, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(location, est_deaths), <span class="at">y =</span> est_deaths, <span class="at">fill =</span> region)) <span class="sc">+</span></span>
+<span id="cb13-275"><a href="#cb13-275" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb13-276"><a href="#cb13-276" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb13-277"><a href="#cb13-277" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb13-278"><a href="#cb13-278" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb13-279"><a href="#cb13-279" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Estimated Number of Suicide Deaths (Top 15 Countries, WHO 2021)"</span>,</span>
+<span id="cb13-280"><a href="#cb13-280" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Based on population × suicide rate per 100K"</span>,</span>
+<span id="cb13-281"><a href="#cb13-281" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="cn">NULL</span>,</span>
+<span id="cb13-282"><a href="#cb13-282" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Estimated deaths"</span>,</span>
+<span id="cb13-283"><a href="#cb13-283" aria-hidden="true" tabindex="-1"></a>    <span class="at">fill =</span> <span class="st">"Region"</span></span>
+<span id="cb13-284"><a href="#cb13-284" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb13-285"><a href="#cb13-285" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">13</span>)</span>
+<span id="cb13-286"><a href="#cb13-286" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-287"><a href="#cb13-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-288"><a href="#cb13-288" aria-hidden="true" tabindex="-1"></a><span class="fu"># Частина №2 - дослидження **корисності** людей які зіграли з вами нещодавно в гру</span></span>
+<span id="cb13-289"><a href="#cb13-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-290"><a href="#cb13-290" aria-hidden="true" tabindex="-1"></a><span class="fu">## Перщопочатково ідея була взагалі інша - я хотів з сайту FRED взяти датасет по країнам і дослідити інфлаяцію за той рік, однак проблема буловтому, що підходящого датасету там не знайшлося, а дані бралися незрозуміло звідки, тому через брак часу і небажання шукати стовідсотково підходящий варіант, ця ідея була відкинута</span></span>
+<span id="cb13-291"><a href="#cb13-291" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-292"><a href="#cb13-292" aria-hidden="true" tabindex="-1"></a><span class="fu">## По самій роботі з АPI сервісами, не до кінця все було зрозуміло,особливо з нетиповими випадками в яких розібратися було іноді складно. Тут, на щастя, не потребувався АРІ ключ, але була така можливість, однак з умовою оплати за використання даних. </span></span>
+<span id="cb13-293"><a href="#cb13-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-296"><a href="#cb13-296" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-297"><a href="#cb13-297" aria-hidden="true" tabindex="-1"></a><span class="co"># Steam or OpenDota account ID</span></span>
+<span id="cb13-298"><a href="#cb13-298" aria-hidden="true" tabindex="-1"></a>games_id <span class="ot">&lt;-</span> <span class="dv">8502020240</span> <span class="co"># Your game ID </span></span>
+<span id="cb13-299"><a href="#cb13-299" aria-hidden="true" tabindex="-1"></a>player_id <span class="ot">&lt;-</span> <span class="dv">1515008780</span> <span class="co"># Your player ID </span></span>
+<span id="cb13-300"><a href="#cb13-300" aria-hidden="true" tabindex="-1"></a>req1 <span class="ot">&lt;-</span> <span class="fu">request</span>(<span class="fu">paste0</span>(<span class="st">"https://api.opendota.com/api/matches/"</span>, games_id))</span>
+<span id="cb13-301"><a href="#cb13-301" aria-hidden="true" tabindex="-1"></a>req <span class="ot">&lt;-</span> <span class="fu">request</span>(<span class="fu">paste0</span>(<span class="st">"https://api.opendota.com/api/players/"</span>, player_id))</span>
+<span id="cb13-302"><a href="#cb13-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-303"><a href="#cb13-303" aria-hidden="true" tabindex="-1"></a>resp1 <span class="ot">&lt;-</span> <span class="fu">req_perform</span>(req1)</span>
+<span id="cb13-304"><a href="#cb13-304" aria-hidden="true" tabindex="-1"></a>resp <span class="ot">&lt;-</span> <span class="fu">req_perform</span>(req)</span>
+<span id="cb13-305"><a href="#cb13-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-306"><a href="#cb13-306" aria-hidden="true" tabindex="-1"></a>game_data <span class="ot">&lt;-</span> <span class="fu">resp_body_json</span>(resp1, <span class="at">simplifyVector =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-307"><a href="#cb13-307" aria-hidden="true" tabindex="-1"></a>player_data <span class="ot">&lt;-</span> <span class="fu">resp_body_json</span>(resp, <span class="at">simplifyVector =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-308"><a href="#cb13-308" aria-hidden="true" tabindex="-1"></a>game_data_df <span class="ot">&lt;-</span> game_data<span class="sc">$</span>players</span>
+<span id="cb13-309"><a href="#cb13-309" aria-hidden="true" tabindex="-1"></a>game_data_df</span>
+<span id="cb13-310"><a href="#cb13-310" aria-hidden="true" tabindex="-1"></a>game_data_df[<span class="fu">sapply</span>(game_data_df, is.null)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb13-311"><a href="#cb13-311" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-312"><a href="#cb13-312" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-313"><a href="#cb13-313" aria-hidden="true" tabindex="-1"></a><span class="fu">## Тут ми можемо спостерігати перший результат аналізу нових даних, я для цікавості вирішив взяти на обробку одну з своїх недавніх ігор, однак не все на графіку буде зрозуміло - пізніше поясню чому.</span></span>
+<span id="cb13-314"><a href="#cb13-314" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-317"><a href="#cb13-317" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-318"><a href="#cb13-318" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: FALSE</span></span>
+<span id="cb13-319"><a href="#cb13-319" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(game_data_df, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">factor</span>(hero_id), <span class="at">y =</span> kills, <span class="at">fill =</span> kills)) <span class="sc">+</span></span>
+<span id="cb13-320"><a href="#cb13-320" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb13-321"><a href="#cb13-321" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"#00BFC4"</span>, <span class="at">high =</span> <span class="st">"#F8766D"</span>) <span class="sc">+</span></span>
+<span id="cb13-322"><a href="#cb13-322" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb13-323"><a href="#cb13-323" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"Kills per Player — Match"</span>, games_id),</span>
+<span id="cb13-324"><a href="#cb13-324" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Hero ID"</span>,</span>
+<span id="cb13-325"><a href="#cb13-325" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Kills"</span></span>
+<span id="cb13-326"><a href="#cb13-326" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb13-327"><a href="#cb13-327" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">13</span>)</span>
+<span id="cb13-328"><a href="#cb13-328" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-329"><a href="#cb13-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-330"><a href="#cb13-330" aria-hidden="true" tabindex="-1"></a><span class="fu">## І інший графік - розрахунок коефіціенту **користності** за одну гру.</span></span>
+<span id="cb13-331"><a href="#cb13-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-334"><a href="#cb13-334" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb13-335"><a href="#cb13-335" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: FALSE</span></span>
+<span id="cb13-336"><a href="#cb13-336" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(game_data_df, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">factor</span>(hero_id), <span class="at">y =</span> ((kills <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> assists) <span class="sc">/</span> <span class="fu">pmax</span>(deaths, <span class="dv">1</span>)), <span class="at">fill =</span> kills)) <span class="sc">+</span></span>
+<span id="cb13-337"><a href="#cb13-337" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb13-338"><a href="#cb13-338" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"plasma"</span>) <span class="sc">+</span></span>
+<span id="cb13-339"><a href="#cb13-339" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb13-340"><a href="#cb13-340" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"KDA Ratio for Each Player — Match"</span>, games_id),</span>
+<span id="cb13-341"><a href="#cb13-341" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Hero ID"</span>,</span>
+<span id="cb13-342"><a href="#cb13-342" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"KDA Ratio"</span></span>
+<span id="cb13-343"><a href="#cb13-343" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb13-344"><a href="#cb13-344" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">13</span>)</span>
+<span id="cb13-345"><a href="#cb13-345" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb13-346"><a href="#cb13-346" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-347"><a href="#cb13-347" aria-hidden="true" tabindex="-1"></a><span class="fu">## Настав час пояснень того що це за циферки і де букви. Cправа в тому що на даний момент існує 2 варіанти того як можна доповнити дані - використовуючи датасети які вже є опубліковані, однак не оновлені за довгий час, через що зустрічаються такі артефакти як виведення предмету який найчастіше купили в грі - а виявляється що предмет з таким айді давно не існує і його замінив інший предмет. І таких випадків безліч, тому **єдиний правильний** варіант розвитку подій на даний момент, це власноруч прописата всім героям відповідні айді, характеристики, скіли, пасивні навички, і все теж саме для предметів, що зрозуміло, займе час.</span></span>
+</code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

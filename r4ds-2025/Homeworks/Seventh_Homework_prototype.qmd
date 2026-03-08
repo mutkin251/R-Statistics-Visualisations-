@@ -1,0 +1,120 @@
+---
+title: "Просторовий аналіз умов праці в Україні"
+subtitle: "Статистика праці за областями (2015-2019 рр.))"
+author: "Mykola Utkin"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: show
+    theme: cosmo
+    fig-width: 12
+    fig-height: 10
+---
+
+## Introduction
+
+This analysis explores the spatial distribution of working conditions across Ukrainian oblasts using official labor statistics from 2015-2019. We examine the share of employees working in harmful conditions and visualize regional disparities through choropleth maps.
+
+**Research Objectives:**
+
+1. Map the percentage of workers in harmful working conditions by oblast
+2. Identify regional patterns and disparities in workplace safety
+3. Analyze temporal changes between 2015 and 2019
+4. Visualize industrial concentration and its relationship to working conditions
+
+## Setup and Data Loading
+
+```{r setup, message=FALSE, warning=FALSE}
+# Load required packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  sf,
+  tidyverse,
+  giscoR,
+  rnaturalearth,
+  scales,
+  viridis,
+  patchwork,
+  knitr,
+  here
+)
+
+# Set options
+options(scipen = 999)  # Disable scientific notation
+```
+
+## Step 1: Load Spatial Data
+
+```{r load-spatial}
+# Load Ukraine oblasts shapefile
+ukraine_oblasts <- read_sf("data/geoBoundaries-UKR-ADM1.shp")
+
+# Display structure
+glimpse(ukraine_oblasts)
+
+# Check unique oblast names
+cat("Number of regions:", nrow(ukraine_oblasts), "\n")
+cat("\nOblast names:\n")
+print(sort(unique(ukraine_oblasts$shapeName)))
+```
+
+### Standardize Oblast Names
+
+```{r standardize-names}
+# Create standardized names matching the tabular data
+ukraine_oblasts <- ukraine_oblasts |>
+  mutate(
+    oblast_standard = case_when(
+      shapeName == "Volyn Oblast" ~ "Волинська",
+      shapeName == "Rivne Oblast" ~ "Рівненська",
+      shapeName == "Zhytomyr Oblast" ~ "Житомирська",
+      shapeName == "Kyiv Oblast" ~ "Київська",
+      shapeName == "Chernihiv Oblast" ~ "Чернігівська",
+      shapeName == "Sumy Oblast" ~ "Сумська",
+      shapeName == "Kharkiv Oblast" ~ "Харківська",
+      shapeName == "Luhansk Oblast" ~ "Луганська",
+      shapeName == "Donetsk Oblast" ~ "Донецька",
+      shapeName == "Zaporizhia Oblast" ~ "Запорізька",
+      shapeName == "Kherson Oblast" ~ "Херсонська",
+      shapeName == "Autonomous Republic of Crimea" ~ "АР Крим",
+      shapeName == "Sevastopol" ~ "Севастополь",
+      shapeName == "Mykolaiv Oblast" ~ "Миколаївська",
+      shapeName == "Odessa Oblast" ~ "Одеська",
+      shapeName == "Vinnytsia Oblast" ~ "Вінницька",
+      shapeName == "Cherkasy Oblast" ~ "Черкаська",
+      shapeName == "Poltava Oblast" ~ "Полтавська",
+      shapeName == "Dnipropetrovsk Oblast" ~ "Дніпропетровська",
+      shapeName == "Kirovohrad Oblast" ~ "Кіровоградська",
+      shapeName == "Khmelnytskyi Oblast" ~ "Хмельницька",
+      shapeName == "Ternopil Oblast" ~ "Тернопільська",
+      shapeName == "Lviv Oblast" ~ "Львівська",
+      shapeName == "Ivano-Frankivsk Oblast" ~ "Івано-Франківська",
+      shapeName == "Zakarpattia Oblast" ~ "Закарпатська",
+      shapeName == "Chernivtsi Oblast" ~ "Чернівецька",
+      shapeName == "Kyiv" ~ "Київ",
+      TRUE ~ shapeName
+    )
+  )
+
+# Preview map
+ggplot(ukraine_oblasts) +
+  geom_sf(fill = "lightblue", color = "white", size = 0.5) +
+  theme_void() +
+  labs(title = "Ukraine: Administrative Divisions (Oblasts)")
+```
+
+## Step 2: Load and Clean Tabular Data
+
+```{r load-tabular}
+#| include: FALSE
+# Load working conditions data
+work_data <- read_csv("data/Work_conditions.csv", show_col_types = FALSE)
+
+# Display structure
+glimpse(work_data)
+cat("\nFirst few rows:\n")
+head(work_data) |> kable()
+```
+
+### Data Cleaning and Transformation

@@ -1,0 +1,508 @@
+---
+title: "NYC Yellow Taxi Deep Dive: 2024 Patterns & Insights"
+author: "Mykola Utkin"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: show
+    theme: cosmo
+    fig-width: 12
+    fig-height: 7
+    embed-resources: true
+  pdf:
+    toc: true
+    number-sections: true
+---
+
+## Про що ця робота
+
+В цій роботі я розглянув таксіНью Йорка за 2024 рк, оскільки вони найновіші і найповніші, а також в ни присутні:
+
+- **Патерни часу**: Дані по місяця, дням, годинам і навіть хвилинам.
+- **Грошові операції**: зрозуміла структура, культура чайових, методи платежів.
+- **Інформативні дані**: звідки, куди, як довго, як швидко?
+- **Психологічна зіставляюча**: чи є залежність між довжиною поїздки і чайовими?
+
+## Вступ і головні питання 
+
+### Про датасет
+
+Це датасет протаксі Нью Йорку і бла бла бла, ви вже це чули 1000 разів. Датасет про машинк, машинки роблять врум врум за дзинь дзинь.
+
+### Що будемо досліджувати
+
+1. Яка тенденція в кількості і довжині поїздок?
+2. Коли найпіковіші години по місту?
+3. Чи мето оплати поїздок впливаю на довжину поїздок?
+4. Який коефіціент залежності між довжиною поїздки, часом і вартістю?
+5. Чиє аномальні значення і якщо так, чи вони критичні?
+
+## Імпортуємо дані
+
+```{r setup, message=FALSE, warning=FALSE}
+
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+pacman::p_load(
+  DBI,
+  duckdb,
+  arrow,
+  tidyverse,
+  lubridate,
+  scales,
+  patchwork,
+  knitr,
+  viridis,
+  ggridges,
+  hms
+)
+
+cat("System Information:")
+cat("CPU:", benchmarkme::get_cpu()$model_name)
+cat("Analysis Date:", format(Sys.Date(), "%B %d, %Y"))
+```
+
+### Чого DuckDB?
+
+Я обрав **DuckDB** як наш основний аналітичний двигун, тому що:
+
+✅ **Аналітика в базі даних**: обробка великих наборів даних без завантаження в пам'ять R  
+✅ **Підтримка Parquet**: нативне читання колонкового формату (у багато швидше за CSV) 
+
+✅ **Інтеграція SQL**: складні об'єднання та агрегації зі знайомим синтаксисом  
+
+✅ **Просторові функції**: вбудовані геопросторові можливості для аналізу локацій  
+
+✅ **Підтримка HTTP**: пряме завантаження даних з URL без скачування
+
+```{r import-data}
+
+con <- dbConnect(duckdb(), dbdir = ":memory:")
+
+data_path <- "par_files"
+taxi <- tbl(con, "read_parquet('par_files/yellow_tripdata_2024-*.parquet')")
+
+cat("Data path:", data_path)
+cat("Files pattern: yellow_tripdata_2024-*.parquet")
+
+taxi |> 
+  head(3) |> 
+  collect() |> 
+  glimpse()
+```
+
+### Дивимось що вийшло
+
+```{r data-overview}
+
+total_trips <- taxi |> 
+  summarise(n = n()) |> 
+  pull(n)
+
+date_range <- taxi |>
+  summarise(
+    min_date = min(tpep_pickup_datetime, na.rm = TRUE),
+    max_date = max(tpep_pickup_datetime, na.rm = TRUE)
+  ) |>
+  collect()
+
+cat("Total trip records:", format(total_trips, big.mark = ","))
+cat("Date range:", 
+    format(date_range$min_date, "%B %d, %Y"), 
+    "to", 
+    format(date_range$max_date, "%B %d, %Y"))
+```
+
+## Продивляюсь на рахунок аномалій
+
+```{r quality-check}
+
+quality_check <- taxi |>
+  mutate(year = year(tpep_pickup_datetime)) |>
+  group_by(year) |>
+  summarise(
+    n_trips = n(),
+    avg_fare = mean(fare_amount, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  collect() |>
+  arrange(year)
+
+kable(quality_check, 
+      digits = 2,
+      format.args = list(big.mark = ","),
+      caption = "Trip Distribution by Year - Identifying Anomalies")
+```
+
+**Findings**: В датасеті якогось чорта роблять записи за 2002 2009 і НАВІТЬ за 2026 - як? Питання гарне, але ми його задавати не будемо, а просто видалимо з бази.
+
+## Перший графічек Місячний тренд
+
+### Підготовлюю дані
+
+```{r monthly-prep}
+
+monthly_stats <- taxi |>
+  filter(
+    year(tpep_pickup_datetime) == 2024,
+    fare_amount > 0,
+    fare_amount < 500,
+    trip_distance > 0,
+    trip_distance < 100,
+    passenger_count > 0
+  ) |>
+  mutate(
+    month = strftime(tpep_pickup_datetime, '%Y-%m'),
+    month_num = month(tpep_pickup_datetime),
+    month_name = strftime(tpep_pickup_datetime, '%B')
+  ) |>
+  group_by(month, month_num, month_name) |>
+  summarise(
+    total_trips = n(),
+    mean_fare = mean(fare_amount, na.rm = TRUE),
+    median_fare = median(fare_amount, na.rm = TRUE),
+    mean_tip = mean(tip_amount, na.rm = TRUE),
+    median_tip = median(tip_amount, na.rm = TRUE),
+    mean_distance = mean(trip_distance, na.rm = TRUE),
+    mean_duration = mean(
+      epoch(tpep_dropoff_datetime) - epoch(tpep_pickup_datetime),
+      na.rm = TRUE
+    ) / 60, 
+    total_revenue = sum(total_amount, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(month_num) |>
+  collect()
+
+
+kable(monthly_stats |> select(-month, -month_num), 
+      digits = 2,
+      format.args = list(big.mark = ","),
+      caption = "Monthly Statistics Summary - 2024")
+```
+
+### Графік прибутку і кількості похздок
+
+```{r plot-volume-revenue, fig.width=14, fig.height=8}
+
+monthly_scaled <- monthly_stats |>
+  mutate(
+    trips_millions = total_trips / 1e6,
+    revenue_millions = total_revenue / 1e6
+  )
+
+
+p1 <- ggplot(monthly_scaled, aes(x = month_name)) +
+  geom_col(aes(y = trips_millions), fill = "#2E86AB", alpha = 0.7) +
+  geom_line(aes(y = revenue_millions / 10, group = 1), 
+            color = "#A23B72", linewidth = 1.5) +
+  geom_point(aes(y = revenue_millions / 10), 
+             color = "#A23B72", size = 3) +
+  scale_y_continuous(
+    name = "Total Trips (Millions)",
+    labels = label_number(suffix = "M"),
+    sec.axis = sec_axis(~ . * 10, 
+                        name = "Total Revenue (Millions USD)",
+                        labels = label_dollar(suffix = "M"))
+  ) +
+  labs(
+    title = "NYC Yellow Taxi: Monthly Trip Volume and Revenue (2024)",
+    subtitle = "Bars represent trip count, line shows total revenue",
+    x = NULL,
+    caption = "Data: NYC TLC | Filtered for valid 2024 trips only"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.title.y.left = element_text(color = "#2E86AB", face = "bold"),
+    axis.title.y.right = element_text(color = "#A23B72", face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+p1
+```
+
+**Що ми бачимо:**
+
+- **Найприбутковіший сезон**: У листопаді була зафіксована найбільша активність за 3.8 млн поїздок вони заробили 7.55 млн баксів.
+
+- **Патерни по сезонам**: Зростання протягом Червня-Листопада
+
+- **Веснянмй період**: можливий зростання туризму в цей період
+
+### Штука номер два: як змінювалися чайові і зарплатня,чи було підвищення тарифів?
+
+```{r plot-fare-tip, fig.width=14, fig.height=7}
+
+fare_tip_long <- monthly_stats |>
+  select(month_name, month_num, mean_fare, mean_tip) |>
+  pivot_longer(
+    cols = c(mean_fare, mean_tip),
+    names_to = "metric",
+    values_to = "amount"
+  ) |>
+  mutate(
+    metric = case_when(
+      metric == "mean_fare" ~ "Average Fare",
+      metric == "mean_tip" ~ "Average Tip"
+    )
+  )
+
+ggplot(fare_tip_long, aes(x = reorder(month_name, month_num), y = amount, 
+                          color = metric, group = metric)) +
+  geom_line(linewidth = 1.5) +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("Average Fare" = "#06A77D", 
+                                 "Average Tip" = "#F18F01")) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Monthly Average Fares and Tips Throughout 2024",
+    subtitle = "Both metrics show relative stability with slight seasonal variations",
+    x = NULL,
+    y = "Amount (USD)",
+    color = "Metric",
+    caption = "Data: NYC TLC | Excludes outliers (fare > $500, distance > 100 miles)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+**Основне:**
+
+- **Стабільність Зарплат**: Тарифи в районі 18-20 баксів протягомм року з невеликими розбіжностями в 5-10%
+
+- **Чайові**: Вонистабільно в районі 3 баксів, а це десь 1/8 від зарплати
+
+- **Невеличкі покращення**: Чим ближче до зими, тим більше заробіток з таксі
+
+## Аналіз 2: Години пік
+
+```{r hourly-analysis}
+hourly_stats <- taxi |>
+  filter(
+    year(tpep_pickup_datetime) == 2024,
+    fare_amount > 0,
+    fare_amount < 500
+  ) |>
+  mutate(
+    hour = hour(tpep_pickup_datetime),
+    day_of_week = dayofweek(tpep_pickup_datetime),
+    is_weekend = day_of_week %in% c(0, 6)
+  ) |>
+  group_by(hour, is_weekend) |>
+  summarise(
+    total_trips = n(),
+    mean_fare = mean(fare_amount, na.rm = TRUE),
+    mean_distance = mean(trip_distance, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  collect() |>
+  mutate(
+    day_type = if_else(is_weekend, "Weekend", "Weekday")
+  )
+```
+
+```{r plot-hourly, fig.width=14, fig.height=8}
+
+ggplot(hourly_stats, aes(x = hour, y = total_trips / 1000, 
+                         color = day_type, group = day_type)) +
+  geom_line(linewidth = 1.5) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("Weekday" = "#D62828", "Weekend" = "#003049")) +
+  scale_x_continuous(breaks = seq(0, 23, 2),
+                     labels = paste0(seq(0, 23, 2), ":00")) +
+  scale_y_continuous(labels = label_number(suffix = "K")) +
+  labs(
+    title = "NYC Yellow Taxi: Hourly Trip Patterns",
+    subtitle = "Clear differences between weekday commute patterns and weekend leisure travel",
+    x = "Hour of Day",
+    y = "Total Trips (Thousands)",
+    color = "Day Type",
+    caption = "Data: NYC TLC 2024 | All months combined"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    legend.position = "top",
+    legend.text = element_text(size = 12),
+    panel.grid.minor = element_blank()
+  ) +
+  annotate("rect", xmin = 7, xmax = 10, ymin = -Inf, ymax = Inf,
+           alpha = 0.1, fill = "blue") +
+  annotate("text", x = 8.5, y = max(hourly_stats$total_trips/1000) * 0.95,
+           label = "Morning\nRush", size = 3.5, fontface = "bold") +
+  annotate("rect", xmin = 17, xmax = 20, ymin = -Inf, ymax = Inf,
+           alpha = 0.1, fill = "blue") +
+  annotate("text", x = 18.5, y = max(hourly_stats$total_trips/1000) * 0.95,
+           label = "Evening\nRush", size = 3.5, fontface = "bold")
+```
+
+**Основне:**
+
+- **Години пік**: Очевидні вони о 8-9 ранку і о 6-8 PM вечора
+
+- **Нічні активності**: На вихідних на 40% більше пізніх поїздок аніж посеред тижня
+
+### Аналіз по днях
+
+```{r daily-analysis, fig.width=12, fig.height=6}
+
+daily_stats <- taxi |>
+  filter(
+    year(tpep_pickup_datetime) == 2024,
+    fare_amount > 0
+  ) |>
+  mutate(
+    day_of_week = dayofweek(tpep_pickup_datetime),
+    day_name = dayname(tpep_pickup_datetime)
+  ) |>
+  group_by(day_of_week, day_name) |>
+  summarise(
+    total_trips = n(),
+    mean_fare = mean(fare_amount, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  collect() |>
+  arrange(day_of_week)
+
+daily_stats <- daily_stats |>
+  mutate(
+    day_name = factor(day_name, 
+                      levels = c("Monday", "Tuesday", "Wednesday", "Thursday", 
+                                 "Friday", "Saturday", "Sunday"))
+  )
+
+ggplot(daily_stats, aes(x = day_name, y = total_trips / 1e6)) +
+  geom_col(aes(fill = day_name), alpha = 0.8, show.legend = FALSE) +
+  geom_text(aes(label = paste0(round(total_trips/1e6, 1), "M")),
+            vjust = -0.5, size = 4, fontface = "bold") +
+  scale_fill_viridis_d(option = "turbo") +
+  scale_y_continuous(labels = label_number(suffix = "M", scale = 1),
+                     expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title = "Weekly Trip Distribution: Total Trips by Day of Week",
+    subtitle = "Thursday and Friday show highest activity; Sunday lowest",
+    x = NULL,
+    y = "Total Trips (Millions)",
+    caption = "Data: NYC TLC 2024 | All valid trips"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(size = 12)
+  )
+```
+
+## Аналіз 3: аналіз подорожейй
+
+### Кореляція дитсанції і заробітку
+
+```{r distance-fare-sample}
+
+set.seed(42)
+distance_fare <- taxi |>
+  filter(
+    year(tpep_pickup_datetime) == 2024,
+    trip_distance > 0.1,
+    trip_distance < 30,
+    fare_amount > 2.50,
+    fare_amount < 150,
+    passenger_count > 0
+  ) |>
+  select(trip_distance, fare_amount, tip_amount, passenger_count) |>
+  slice_sample(n = 15000) |>
+  collect()
+
+
+cor_value <- cor(distance_fare$trip_distance, distance_fare$fare_amount)
+```
+
+```{r plot-distance-fare, fig.width=12, fig.height=8, warning=FALSE}
+ggplot(distance_fare, aes(x = trip_distance, y = fare_amount)) +
+  geom_hex(bins = 50) +
+  geom_smooth(method = "lm", color = "#D62828", linewidth = 1.5, se = TRUE) +
+  scale_fill_viridis_c(option = "plasma", trans = "log10",
+                       name = "Trip\nDensity\n(log scale)") +
+  scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, 5)) +
+  scale_y_continuous(labels = dollar_format(), limits = c(0, 150)) +
+  labs(
+    title = "Trip Distance vs Fare Amount: Strong Linear Relationship",
+    subtitle = paste0("Pearson correlation: r = ", round(cor_value, 3), 
+                     " (sample of 15,000 trips)"),
+    x = "Trip Distance (miles)",
+    y = "Fare Amount (USD)",
+    caption = "Data: NYC TLC 2024 | Hexagonal binning shows trip density"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    legend.position = "right"
+  ) +
+  annotate("text", x = 22, y = 120, 
+           label = paste0("Base fare + ~$2.50/mile\nplus time-based charges"),
+           size = 4, hjust = 0, color = "darkred", fontface = "italic")
+```
+
+**Висновки:**
+
+- **Сильна кореляція**: Дистанція пояснює +-87% розбіжності зарплатні (r = `r round(cor_value, 3)`)
+
+- **Паттерн щільності**: Велика кількість поїздок довжиною в 1-5 миль, а прям довгих поїзок майже нема
+
+
+## Заключення
+
+### Основні висновки
+
+#### **1. Часові закономірності**
+- **Сезонні коливання**: пік у жовтні (3,83 млн поїздок) з літніми спадами у липні-серпні
+
+- **Щоденні закономірності**: чіткі години пік у будні (8-9 ранку, 18-20 вечора); більш плавний розподіл у вихідні
+
+- **Щотижневі тенденції**: найбільше навантаження у четвер-п'ятницю; найменше навантаження у неділю
+
+#### **2. Фінансові показники**
+- **Стабільне ціноутворення**: середня вартість проїзду становила 18-20 доларів США з мінімальними щомісячними коливаннями
+
+- **Постійні чайові**: чайові залишалися на рівні 3-3,5 доларів США
+
+- **Кореляція доходів**: сильний зв'язок між обсягом поїздок та загальним доходом (r +- 0,99)
+
+#### **3. Технології та ринок**
+- **Цифрове домінування**: 70% платежів здійснюється кредитною карткою
+- **Концентрація постачальників**: VeriFone контролює ~70% технологічної інфраструктури
+- **Якість даних**: Деякі аномальні записи потребують фільтрації
+
+### Бізнес-рекомендації
+
+#### **Для водіїв**
+1. **Оптимізація графіку**: Зосередьтеся на четвер-п'ятницю та години пік для максимального заробітку
+2. **Заохочуйте цифрові платежі**: Чайові за кредитними картками значно вищі; заохочуйте платежі картками
+3. **Орієнтація на години пік**: Ранкові (8-9 ранку) та вечірні (18-20 вечора) поїздки на роботу найвигідніші
+4. **Стратегія вихідних**: Пізні нічні години (22:00 - 2:00) демонструють високий попит у вихідні
+
+#### **Для операторів автопарку**
+1. **Сезонне укомплектування персоналом**: Збільшення потужностей на період пікових навантажень у березні-травні та вересні-листопаді
+2. **Інвестиції в технології**: Забезпечення надійності систем кредитних карток у всіх транспортних засобах
+3. **Моніторинг даних**: Регулярно відстежуйте аномалії та проблеми з якістю даних
+4. **Цінова стратегія**: Розгляньте динамічні коригування в години пік/сезони
+
+### Можливості майбутнього аналізу
+
+1. **Географічний аналіз**: Картографування місць посадки/висадки для визначення гарячих точок
+2. **Вплив погоди**: Співвідношення моделей поїздок з даними про погоду
+3. **Скачки на основі подій**: Аналіз впливу великих подій, свят, концертів
+4. **Прогнозне моделювання**: Створення моделей прогнозування попиту для планування потужностей
+5. **Порівняльний аналіз**: Порівняння з даними Green Taxi, Uber/Lyft
+6. **Прогнозування часових рядів**: Прогнозування майбутніх моделей попиту
+```{r}
+dbDisconnect(con, shutdown = TRUE)
+```

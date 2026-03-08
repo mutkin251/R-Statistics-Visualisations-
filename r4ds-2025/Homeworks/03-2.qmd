@@ -1,0 +1,148 @@
+---
+title: "Assignment 1: Overview of Visualizations"
+subtitle: "Salaries and workers in Data Science"
+author: "Mykola Utkin"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: show
+    theme: cosmo
+    embed-resources: true
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+    pdf-engine: xelatex
+    keep-tex: true
+fig-width: 12
+fig-height: 10
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+## Visualization 1 - Grouped Bar Chart
+
+**Image:**
+
+![Data Science Salaries by Role](https://www.kdnuggets.com/wp-content/uploads/Screenshot-2024-12-18-at-12.38.13.png)
+
+**Source:** <https://www.kdnuggets.com/data-science-salaries-job-market-analysis-2024-2025>
+
+**Chart type:** Vertical Grouped Bar Chart
+
+### Mapping Analysis
+
+| What's being shown | Data type | Channel used |
+|-------------------|-----------|--------------|
+| Job roles (18 positions: Data Scientist, ML Engineer, etc.) | Nominal | Position (Y-axis), ordered vertically |
+| Experience levels (Entry-Level 0-2 yrs, Mid-Level 3-5 yrs, Senior-Level 5+ yrs) | Ordinal | Grouped bars with distinct colors (teal, coral/orange, purple) |
+| Salary ranges in USD (minimum and maximum for each level) | Quantitative | Bar length (horizontal position/X-axis) |
+| Exact salary values | Quantitative | Text labels at the end of each bar (e.g., "$95,000-$130,000") |
+
+### Effectiveness Note
+
+The horizontal orientation effectively accommodates long job titles without text overlap or rotation, making role names immediately readable. The three-color grouping (teal for entry, orange for mid, purple for senior) creates clear visual hierarchy that allows quick comparison both within roles (salary progression) and across roles (which positions pay more at each level).
+
+---
+
+## Visualization 2 - Multi-line Heat Map
+
+**Image:**
+
+![Salary Trends by Experience Level](https://www.kdnuggets.com/wp-content/uploads/Screenshot-2024-12-18-at-12.41.59.png)
+
+**Source:** <https://www.kdnuggets.com/data-science-salaries-job-market-analysis-2024-2025>
+
+**Chart type:** Multi-line Heat Map Chart (Levels Divided)
+
+### Mapping Analysis
+
+| What's being shown | Data type | Channel used |
+|-------------------|-----------|--------------|
+| Job Description (18 position) | Nominative | Position (Y-axis), line height |
+| Experience level (Entry-Level, Mid-Level, Senior) | Ordinal | Position (X-axis) |
+| Salary change | Quantitative | Line slope/angle showing rate of increase, Color hue(from blue to red) |
+| Individual data points | Quantitative | Numbers on each slot, Color hue (white,black)|
+
+### Effectiveness Note
+
+The line trajectories illustrate strict dependency between color and value. With senior salaries growing from approximately $120K to $190K while entry-level positions rose more modestly from $65K to $110K.
+
+---
+
+## Visualization 3 - Regular Heatmap
+
+**Image:**
+
+![Salary Heatmap by Role and Experience]("D:\RProjects\Data_vizualisation\data-science-salarie.png")
+
+**Source:** <https://www.refontelearning.com/salary-guide/data-science-salaries-unveiled>
+
+**Chart type:** Heatmap (Matrix visualization)
+
+### Mapping Analysis
+
+| What's being shown | Data type | Channel used |
+|-------------------|-----------|--------------|
+| Job roles (18 positions arranged vertically: Data Scientist, ML Engineer, etc.) | Nominal | Position (Y-axis), organized by role category |
+| Experience levels (Entry-Level, Mid-Level, Senior-Level) | Ordinal | Position (X-axis), left to right progression |
+| Salary ranges in USD | Quantitative | Color intensity using gradient (from dark blue to dark red), where more red = higher salary |
+| Exact salary ranges | Quantitative | Text labels within each cell displaying min-max values (e.g., "$95,000-$130,000") |
+| Salary hierarchy patterns | Quantitative | Diagonal gradient from light (bottom-left/entry) to dark (top-right/senior) |
+
+### Effectiveness Note
+
+The sequential color gradient from blue (representing lower salaries around $65K-$85K for entry-level analysts) to deep red (indicating premium salaries exceeding $290K-$370K for senior CDO positions) creates an intuitive visual encoding where the eye naturally gravitates toward warmer cells representing highest-earning opportunities. One notable insight the heatmap reveals is that some specialized roles (AI Specialist, NLP Engineer) have higher entry-level salaries than generalist mid-level positions (Business Data Analyst), suggesting significant market premium for specialized technical skills regardless of experience.
+
+---
+
+## Visualization 4 - Vertical Bar Chart
+
+**Image:**
+
+![Distribution of Data Science Jobs](https://www.kaggleusercontent.com/kf/136934231/eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..ahZqtLbCAXfxmG8uOMSMog.X5CNMEeTHUrICr3WshGucvRGUN5Wbj8fnnDZ8YfSCb0m1ukbOpmCGvg5fvclnLICP-8coa3xr6wtEfz2PvEJN_FAQiK94Cq1NUppBTkp6vW47kgDVzaGPs4RbH8VJZCDZkkOqf1PJeV9PDXpfqAnlahaFYzwsdr4Vcsx7ZLJ0pLzo8Lb9K4Wfm53JbosTwlP_dFLHSAYQRod2TE7lCWgiPskUIU7jN--Z0VTUbwerTCehhJTTp6BSqNhI-U8e5YVWwXSg94VkoSCYzHcv3M8G3EbhWvy1_TSXg15iJ1cjlrfHpUS08F7xPYkG73LJIEGRkk08M3Gd-wn1YxJqu24JDksxJkKOsYvhWpD4gs9jfv9xqZtzJ20SfV-mqVJ7zYgUGBlkqd5XOc3F4QX3s_Gtzcxjxylwhagf2swotdXWHQmSgms7uOFlHwlcWc9cXIvC4wZ_IVJYVl0NR2UpSce8rfUiMfjpiXKZN5DToI-m1CioLRyPqPpimb8UMwRaJNKavSHCg7ErUxZX06MVCwYth8MIGq4naX5lDfDXEhAEQVSnyvxgLqVZTNW88HRH33G4Cei8PNCQwCc9ryFP8VpYITmyCQcqUwbDwohuGl8LX3x4c8jl7z6oy6LKY7bb6RSqHgi5nkLxsrQPFqhz6JPEjRar43Wx50T2CnEwzDwJF4.ibiEZguFa7WHZefuXF2vsw/__results___files/__results___38_0.png)
+
+**Source:** <https://www.kaggle.com/code/mohamedmagdy191/data-science-salaries-eda-visualization>
+
+**Chart type:**  Vertical Bar Chart
+
+### Mapping Analysis
+
+| What's being shown | Data type | Channel used |
+|-------------------|-----------|--------------|
+| Number of positions | Quantitative | Position (Y-axis), organized by value |
+| Year (2020, 2021, 2022, 2023) | Temporal | Position (X-axis) |
+
+
+### Effectiveness Note
+
+Overall it is a pretty badly made chart. It describes no relation between columns and numbers.
+
+---
+
+## Visualization 5 - Pie Chart
+
+**Image:**
+
+![Distribution of Job Titles in Data Science](https://www.kaggleusercontent.com/kf/136934231/eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..U9ZPZuqxSjMv0vQK5K7rXQ.NrEEoi2CO1ftZ-tUP9A4Te8C2RMGtOYzLxIqZW-yTEqkAZSZy2CDTJDOVtJte_TmWEewOdJUn3b11kUNCjFUBfU6O690Rte8-3Rmh_r7_GlEw_JrpRbxbU7ATu_p4gQt72GSq_8KjdS-gQGhZS6XR8n4f495RCzrCa510wdwryLLRqt8i-cULjaaF0Ove3QqIA0PUmdhOVSPs1QI-KLW-hfqRlpD7KyWHSPUYrbwEsZBqmXKnZ3IypXeF969BIPFRRPts5VBC4S96Mio4ydYUeLPQeO828LvDMsokv_-fN3LuzIFYYm2LGnivX1MxZDDmZYnN8yernb1Uxcfd7oG1dTVZ4QscL4RjOA4yP4lxcQXz4f64aUz9GrgqCC1TOeONAyQkjfP5kuSwW9_RNoGaR_J5freIw_ujg2bcwEVSRkBujPkwwksMQuJUay7aEK6NnBVqTsZEEapGfKMWB_7aB51dvSXIuq-aNOW_TNVh6729cOJh8LcTQPeNTgYHdVFoCIFYoktGsAVzcQUu0oM9qitZPWwLwbSKQRYiWtqU_BEo6ZJ1AQjmFqk65c2uxGRfjnvrJo38gt8ehbPL889TV4rRSEIGy8dva9Er_ZC8iihs13G6_FnWrAQAaeLTyGidB11y4h1iIt_uF7SMik1fkwAcNnSbRSNxpCWUt3Qc5A.XyRxGkD0RNztajQ-i_NceA/__results___files/__results___24_0.png)
+
+**Source:** <https://www.kaggle.com/code/mohamedmagdy191/data-science-salaries-eda-visualization>
+
+**Chart type:** Pie Chart with percentage labels
+
+### Mapping Analysis
+
+| What's being shown | Data type | Channel used |
+|-------------------|-----------|--------------|
+| Job titles (Data Engineer, Data Scientist,etc.) | Nominal | Pie slice/sector (angular position around 360° circle) |
+| Percentage of total job postings | Quantitative | Slice angle and corresponding area (larger angle = higher percentage) |
+| Exact percentage values | Quantitative | Text labels positioned at the approximate center/midpoint of each slice (e.g., "34.8%", "28.1%") |
+| Job categories | Nominal | Color hue (distinct colors assigned to each job title, though colors appear randomly assigned without semantic meaning) |
+| Visual hierarchy of job prevalence | Ordinal | Slices arranged in descending order clockwise from largest to smallest |
+
+### Effectiveness Note
+
+The pie chart immediately communicates market concentration, showing that Data Engineer (34.8%) and Data Scientist (28.1%) together comprise nearly two-thirds (62.9%) of all data science job postings, establishing these as the dominant entry pathways into the field. The descending slice arrangement from largest to smallest creates clear visual hierarchy that guides the eye naturally around the circle. However, the chart suffers from typical pie chart limitations: the smallest slices (those representing 2-4% of jobs) are difficult to distinguish and compare visually despite having percentage labels, as human perception struggles to accurately judge small angular differences.

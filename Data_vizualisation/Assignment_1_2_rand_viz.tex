@@ -1,0 +1,446 @@
+% Options for packages loaded elsewhere
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+
+
+
+
+
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+
+
+ 
+
+
+\KOMAoption{captions}{tableheading}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Assignment 1: Overview of Visualizations},
+  pdfauthor={Mykola Utkin},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\title{Assignment 1: Overview of Visualizations}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Principles of Data Visualization}
+\author{Mykola Utkin}
+\date{}
+\begin{document}
+\maketitle
+
+\renewcommand*\contentsname{Table of contents}
+{
+\hypersetup{linkcolor=}
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+
+\section{Visualization 1 - Grouped Bar
+Chart}\label{visualization-1---grouped-bar-chart}
+
+\textbf{Image:}
+
+\begin{figure}[H]
+
+{\centering \pandocbounded{\includegraphics[keepaspectratio]{Assignment_1_2_rand_viz_files/mediabag/Screenshot-2024-12-1.png}}
+
+}
+
+\caption{Data Science Salaries by Role}
+
+\end{figure}%
+
+\textbf{Source:}
+\url{https://www.kdnuggets.com/data-science-salaries-job-market-analysis-2024-2025}
+
+\textbf{Chart type:} Horizontal Grouped Bar Chart (salary ranges by job
+role and experience level)
+
+\subsection{Mapping Analysis}\label{mapping-analysis}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4318}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3182}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+What's being shown
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Data type
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Channel used
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Job roles (Data Scientist, ML Engineer, Data Analyst, etc.) & Nominal &
+Position (Y-axis) \\
+Experience levels (Entry, Mid, Senior) & Ordinal & Color hue, grouped
+bars \\
+Salary amount (USD) & Quantitative & Bar length (position on X-axis) \\
+Salary labels & Quantitative & Text annotations on bars \\
+\end{longtable}
+
+\subsection{Effectiveness Note}\label{effectiveness-note}
+
+The grouped horizontal bars allow for clear comparison between
+experience levels within each role. The color differentiation for levels
+is effective, but the overall readability could improve with consistent
+ordering of levels and spacing between role groups to avoid visual
+crowding.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Visualization 2 - Multi-line
+Chart}\label{visualization-2---multi-line-chart}
+
+\textbf{Image:}
+
+\begin{figure}[H]
+
+{\centering \pandocbounded{\includegraphics[keepaspectratio]{Assignment_1_2_rand_viz_files/mediabag/Screenshot-2024-12-11.png}}
+
+}
+
+\caption{Salary Trends by Experience Level}
+
+\end{figure}%
+
+\textbf{Source:}
+\url{https://www.kdnuggets.com/data-science-salaries-job-market-analysis-2024-2025}
+
+\textbf{Chart type:} Multi-line Chart (Average salary over time)
+
+\subsection{Mapping Analysis}\label{mapping-analysis-1}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+What's being shown & Data type & Channel used \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Year (2020--2024) & Temporal & Position (X-axis) \\
+Average salary (USD) & Quantitative & Position (Y-axis), line height \\
+Experience level & Ordinal & Color hue, line style \\
+Salary trend & Quantitative & Line slope/angle \\
+\end{longtable}
+
+\subsection{Effectiveness Note}\label{effectiveness-note-1}
+
+The separate color-coded lines clearly display progression across
+experience levels. The viewer easily sees that senior and executive
+salaries increase faster than entry-level ones. Adding data labels or
+smoothing could improve the precision of interpretation without clutter.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Visualization 3 - Heatmap}\label{visualization-3---heatmap}
+
+\textbf{Image:}
+
+\begin{figure}[H]
+
+{\centering \pandocbounded{\includegraphics[keepaspectratio]{"D:/RProjects/Data_vizualisation/data-science-salarie.png"}}
+
+}
+
+\caption{Salary Heatmap by Role and Experience}
+
+\end{figure}%
+
+\textbf{Source:}
+\url{https://www.refontelearning.com/salary-guide/data-science-salaries-unveiled}
+
+\textbf{Chart type:} Heatmap (Matrix showing salaries by role and
+experience)
+
+\subsection{Mapping Analysis}\label{mapping-analysis-2}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+What's being shown & Data type & Channel used \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Job roles & Nominal & Position (Y-axis) \\
+Experience levels & Ordinal & Position (X-axis) \\
+Salary (USD) & Quantitative & Color intensity (dark = higher salary) \\
+Numeric value & Quantitative & Text label (optional) \\
+\end{longtable}
+
+\subsection{Effectiveness Note}\label{effectiveness-note-2}
+
+The sequential color scale effectively highlights the salary gradient
+across roles and experience levels. Darker tones draw attention to
+top-paying roles, such as Data Architect and Chief Data Officer. A color
+legend or numeric scale would further improve interpretability.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Visualization 4 - Stacked Bar
+Chart}\label{visualization-4---stacked-bar-chart}
+
+\textbf{Image:}
+
+\begin{figure}[H]
+
+{\centering \pandocbounded{\includegraphics[keepaspectratio]{Assignment_1_2_rand_viz_files/mediabag/__results___38_0.png}}
+
+}
+
+\caption{Distribution of Data Science Jobs}
+
+\end{figure}%
+
+\textbf{Source:}
+\url{https://www.kaggle.com/code/mohamedmagdy191/data-science-salaries-eda-visualization}
+
+\textbf{Chart type:} Horizontal Stacked Bar Chart (100\% normalized)
+
+\subsection{Mapping Analysis}\label{mapping-analysis-3}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4318}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3182}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+What's being shown
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Data type
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Channel used
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Job titles (8--10 roles) & Nominal & Position (Y-axis) \\
+Experience level (EN, MI, SE, EX) & Ordinal & Bar segments, color hue \\
+Share of experience levels & Quantitative & Segment length (width) \\
+Total composition & Quantitative & Full bar = 100\% \\
+Years 2020-2023 & Temporal & Position (x-axis) \\
+\end{longtable}
+
+\subsection{Effectiveness Note}\label{effectiveness-note-3}
+
+The 100\% stacked format shows workforce composition across roles
+effectively. Roles such as Data Scientist have balanced experience
+distribution, while ML Research Scientist is dominated by
+senior/executive positions. Color-coding is intuitive, though adding
+labels would make small segments easier to interpret.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Visualization 5 - Pie Chart}\label{visualization-5---pie-chart}
+
+\textbf{Image:}
+
+\begin{figure}[H]
+
+{\centering \pandocbounded{\includegraphics[keepaspectratio]{Assignment_1_2_rand_viz_files/mediabag/__results___24_0.png}}
+
+}
+
+\caption{Distribution of Job Titles in Data Science}
+
+\end{figure}%
+
+\textbf{Source:}
+\url{https://www.kaggle.com/code/mohamedmagdy191/data-science-salaries-eda-visualization}
+
+\textbf{Chart type:} Pie Chart with percentage labels
+
+\subsection{Mapping Analysis}\label{mapping-analysis-4}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4318}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3182}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+What's being shown
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Data type
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Channel used
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Job titles (Data Engineer, Data Scientist, etc.) & Nominal &
+Slice/sector position \\
+Percentage of total jobs & Quantitative & Slice angle and area total of
+100\% \\
+Percentage labels & Quantitative & Text values at the middle of the
+sector \\
+Categories & Nominal & Color hue \\
+Categories & Categorical & From largest percentage to least in non
+clockwise order \\
+\end{longtable}
+
+\subsection{Effectiveness Note}\label{effectiveness-note-4}
+
+The pie chart immediately communicates that Data Engineer and Data
+Scientist dominate the market, comprising roughly two-thirds of all
+roles. The descending slice sizes are easy to read. Still, small slices
+are difficult to compare --- a sorted horizontal bar chart could provide
+a more accurate visual ranking.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+
+
+
+\end{document}
